@@ -1,6 +1,6 @@
 // ==UserScript==//
 // @name           RedAces Trimps-UI
-// @namespace      RedAcesUI
+// @namespace      https://github.com/RedAces/Trimps-UI
 // @description    Adds some UI elements to Trimps
 // @include        http://trimps.github.io
 // @include        http://trimps.github.io/*
