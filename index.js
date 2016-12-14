@@ -1,3 +1,11 @@
+// ==UserScript==//
+// @name           RedAces Trimps-UI
+// @namespace      RedAcesUI
+// @description    Adds some UI elements to Trimps
+// @include        http://trimps.github.io
+// @include        http://trimps.github.io/*
+// ==/UserScript==
+
 window.RedAcesUI = window.RedAcesUI || {};
 
 window.RedAcesUI.displayEquipEfficiency = function () {
