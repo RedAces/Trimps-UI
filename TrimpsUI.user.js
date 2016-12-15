@@ -3,7 +3,9 @@
 // @namespace      https://github.com/RedAces/Trimps-UI
 // @description    Adds some UI elements to Trimps
 // @include        http://trimps.github.io
+// @include        https://trimps.github.io
 // @include        http://trimps.github.io/*
+// @include        https://trimps.github.io/*
 // ==/UserScript==
 
 window.RedAcesUI = window.RedAcesUI || {};
@@ -73,7 +75,6 @@ window.RedAcesUI.displayEquipEfficiency = function () {
 
             if (efficiencySpan == undefined) {
                 efficiencySpan               = document.createElement('span');
-                efficiencySpan.style.cssText = 'width:100%;height:20px;';
                 efficiencySpan.id            = 'RedAcesUIEff' + itemName;
                 var itemElement = document.getElementById(itemName);
                 if (itemElement == undefined) {
@@ -83,6 +84,14 @@ window.RedAcesUI.displayEquipEfficiency = function () {
                 itemElement.appendChild(efficiencySpan);
             }
 
+            var cssColor = '';
+            if (i == 0) {
+                cssColor = 'background-color:green;';
+            } else if (i == 1) {
+                cssColor = 'background-color:yellow;';
+            }
+
+            efficiencySpan.style.cssText = 'width:100%;height:20px;' + cssColor;
             efficiencySpan.innerHTML = '<br/>' + stat  + ' #' + (1 * i + 1) + ' (' + Math.round(items[stat][i].costPerValue) + ')';
         }
     }
