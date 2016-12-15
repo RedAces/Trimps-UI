@@ -91,8 +91,8 @@ window.RedAcesUI.displayEquipEfficiency = function () {
                 cssColor = 'background-color:yellow;color:black;';
             }
 
-            efficiencySpan.style.cssText = 'width:100%;height:20px;padding:2px 5px;' + cssColor;
-            efficiencySpan.innerHTML = '<br/>' + stat  + ' #' + (1 * i + 1) + ' (' + Math.round(items[stat][i].costPerValue) + ')';
+            efficiencySpan.innerHTML     = '<br/><span style="padding:2px 5px;' + cssColor + '">'
+                + stat  + ' #' + (1 * i + 1) + ' (' + Math.round(items[stat][i].costPerValue) + ')</span>';
         }
     }
 };
