@@ -75,6 +75,7 @@ window.RedAcesUI.displayEquipEfficiency = function () {
         items[stat].push({"item": itemName, "costPerValue": costPerValue});
     }
 
+    // equipment prestiges
     for (var upgradeName in window.game.upgrades) {
         if (!window.game.upgrades.hasOwnProperty(upgradeName)) {
             continue;
@@ -142,11 +143,23 @@ window.RedAcesUI.displayEquipEfficiency = function () {
                 cssColor = 'background-color:yellow;color:black;';
             }
 
+            var costPerValue = items[stat][i].costPerValue,
+                exponent     = 0;
+
+            while (costPerValue > 1000) {
+                costPerValue = costPerValue / 1000;
+                exponent     = exponent + 3;
+            }
+
             efficiencySpan.innerHTML     = '<br/><span style="padding:2px 5px;' + cssColor + '">'
-                + stat  + ' #' + (1 * i + 1) + ' (' + Math.round(items[stat][i].costPerValue) + ')</span>';
+                + stat  + ' #' + (1 * i + 1) + ' (' + costPerValue.toFixed(2) + 'e' + exponent + ')</span>';
         }
     }
 };
+
+if (window.RedAcesUI.equipEfficiencyTimer) {
+    clearInterval(window.RedAcesUI.equipEfficiencyTimer);
+}
 
 window.RedAcesUI.equipEfficiencyTimer = setInterval(
     window.RedAcesUI.displayEquipEfficiency,
