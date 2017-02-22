@@ -10,7 +10,7 @@
 
 window.RedAcesUI = window.RedAcesUI || {};
 
-/** Upgrade efficiency */
+/** Prestige efficiency calculation */
 
 window.RedAcesUI.attackAfterPrestige = function(base, prestige) {
     if (prestige <= 0) {
@@ -152,16 +152,65 @@ window.RedAcesUI.displayEquipEfficiency = function () {
             }
 
             efficiencySpan.innerHTML     = '<br/><span style="padding:2px 5px;' + cssColor + '">'
-                + stat  + ' #' + (1 * i + 1) + ' (' + costPerValue.toFixed(2) + 'e' + exponent + ')</span>';
+                + stat  + ' #' + (1 * i + 1) + ' (' + costPerValue.toFixed(1) + 'e' + exponent + ')</span>';
         }
     }
 };
 
-if (window.RedAcesUI.equipEfficiencyTimer) {
-    clearInterval(window.RedAcesUI.equipEfficiencyTimer);
+/** Auto employment of trimps */
+window.RedAcesUI.autoEmployTrimps = function() {
+    var maxWorkerTrimps     = Math.ceil(window.game.resources.trimps.realMax() / 2),
+        freeTrimps          = maxWorkerTrimps - window.game.resources.trimps.employed,
+        currentCustomAmount = window.game.global.lastCustomAmt,
+        jobRatios           = {
+            "Miner":      10,
+            "Lumberjack": 10,
+            "Farmer":      1,
+            "Scientist":   1
+        },
+        jobRatioSum         = 22;
+
+    if (freeTrimps <= 0) {
+        return;
+    }
+
+    for (var jobName in jobRatios) {
+        if (!jobRatios.hasOwnProperty(jobName)) {
+            continue;
+        }
+
+        var freeTrimps         = maxWorkerTrimps - window.game.resources.trimps.employed,
+            jobRatio           = jobRatios[jobName],
+            jobEmployees       = window.game.jobs[jobName].owned,
+            targetJobEmployees = maxWorkerTrimps / jobRatioSum * jobRatio;
+
+        if (jobEmployees >= targetJobEmployees) {
+            continue;
+        }
+
+        var nowHiring = Math.max(freeTrimps, targetJobEmployees - jobEmployees);
+        if (nowHiring <= 0) {
+            continue;
+        }
+
+        window.game.global.lastCustomAmt = nowHiring;
+        buyJob(jobName);
+        window.game.global.lastCustomAmt = currentCustomAmount;
+    }
+};
+
+/** init main loop */
+
+window.RedAcesUI.mainLoop = function() {
+    window.RedAcesUI.autoEmployTrimps();
+    window.RedAcesUI.displayEquipEfficiency();
+};
+
+if (window.RedAcesUI.mainTimer) {
+    clearInterval(window.RedAcesUI.mainTimer);
 }
 
-window.RedAcesUI.equipEfficiencyTimer = setInterval(
-    window.RedAcesUI.displayEquipEfficiency,
+window.RedAcesUI.mainTimer = setInterval(
+    window.RedAcesUI.mainLoop,
     1000
 );
