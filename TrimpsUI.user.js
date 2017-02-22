@@ -159,19 +159,23 @@ window.RedAcesUI.displayEquipEfficiency = function () {
 
 /** Auto employment of trimps */
 window.RedAcesUI.autoEmployTrimps = function() {
-    var maxWorkerTrimps     = Math.ceil(window.game.resources.trimps.realMax() / 2),
-        freeTrimps          = maxWorkerTrimps - window.game.resources.trimps.employed,
-        currentCustomAmount = window.game.global.lastCustomAmt,
-        jobRatios           = {
-            "Miner":      10,
-            "Lumberjack": 10,
-            "Farmer":      1,
-            "Scientist":   1
-        },
-        jobRatioSum         = 22;
-
-    if (freeTrimps <= 0) {
-        return;
+    var maxWorkerTrimps = Math.ceil(window.game.resources.trimps.realMax() / 2);
+    if (window.game.world < 150) {
+        var jobRatios   = {
+                "Miner":      10,
+                "Lumberjack": 10,
+                "Farmer":      1,
+                "Scientist":   1
+            },
+            jobRatioSum = 22;
+    } else {
+        var jobRatios   = {
+                "Miner":      10,
+                "Lumberjack":  1,
+                "Farmer":      1,
+                "Scientist":   1
+            },
+            jobRatioSum = 13;
     }
 
     for (var jobName in jobRatios) {
@@ -179,8 +183,12 @@ window.RedAcesUI.autoEmployTrimps = function() {
             continue;
         }
 
-        var freeTrimps         = maxWorkerTrimps - window.game.resources.trimps.employed,
-            jobRatio           = jobRatios[jobName],
+        var freeTrimps = maxWorkerTrimps - window.game.resources.trimps.employed
+        if (freeTrimps <= 0) {
+            return;
+        }
+
+        var jobRatio           = jobRatios[jobName],
             jobEmployees       = window.game.jobs[jobName].owned,
             targetJobEmployees = maxWorkerTrimps / jobRatioSum * jobRatio;
 
@@ -193,9 +201,43 @@ window.RedAcesUI.autoEmployTrimps = function() {
             continue;
         }
 
-        window.game.global.lastCustomAmt = nowHiring;
+        var currentBuyAmount      = window.game.global.buyAmt;
+        window.game.global.buyAmt = nowHiring;
         buyJob(jobName);
-        window.game.global.lastCustomAmt = currentCustomAmount;
+        window.game.global.buyAmt = currentBuyAmount;
+    }
+};
+
+/** Auto building Buildings */
+window.RedAcesUI.autoBuild = function() {
+    var buildings = [
+        "Gym",
+        "Tribute"
+    ];
+
+    for (var i in buildings) {
+        if (!buildings.hasOwnProperty(i)) {
+            continue;
+        }
+
+        var building       = buildings[i],
+            buildingButton = document.getElementById(building);
+
+        if (buildingButton.classList.contains('thingColorCanAfford')) {
+            var currentBuyAmount      = window.game.global.buyAmt;
+            window.game.global.buyAmt = 1;
+            buyBuilding(building);
+            window.game.global.buyAmt = currentBuyAmount;
+        }
+    }
+};
+
+/** Auto player employment */
+window.RedAcesUI.autoPlayerJob = function() {
+    if (window.game.global.buildingsQueue.length > 0) {
+        setGather('buildings');
+    } else {
+        setGather('science');
     }
 };
 
@@ -203,6 +245,9 @@ window.RedAcesUI.autoEmployTrimps = function() {
 
 window.RedAcesUI.mainLoop = function() {
     window.RedAcesUI.autoEmployTrimps();
+    window.RedAcesUI.autoBuild();
+    window.RedAcesUI.autoPlayerJob();
+
     window.RedAcesUI.displayEquipEfficiency();
 };
 
