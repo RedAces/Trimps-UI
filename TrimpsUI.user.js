@@ -201,9 +201,13 @@ window.RedAcesUI.autoEmployTrimps = function() {
             continue;
         }
 
-        var currentBuyAmount      = window.game.global.buyAmt;
+        var currentBuyAmount      = window.game.global.buyAmt,
+            tooltipShown          = document.getElementById("tooltipDiv").style.display !== 'none';
         window.game.global.buyAmt = nowHiring;
         buyJob(jobName);
+        if (!tooltipShown) {
+            tooltip('hide');
+        }
         window.game.global.buyAmt = currentBuyAmount;
     }
 };
@@ -224,9 +228,13 @@ window.RedAcesUI.autoBuild = function() {
             buildingButton = document.getElementById(building);
 
         if (buildingButton.classList.contains('thingColorCanAfford')) {
-            var currentBuyAmount      = window.game.global.buyAmt;
-            window.game.global.buyAmt = 1;
+            var currentBuyAmount      = window.game.global.buyAmt,
+                tooltipShown          = document.getElementById("tooltipDiv").style.display !== 'none';
+            window.game.global.buyAmt = "Max";
             buyBuilding(building);
+            if (!tooltipShown) {
+                tooltip('hide');
+            }
             window.game.global.buyAmt = currentBuyAmount;
         }
     }
@@ -236,6 +244,8 @@ window.RedAcesUI.autoBuild = function() {
 window.RedAcesUI.autoPlayerJob = function() {
     if (window.game.global.buildingsQueue.length > 0) {
         setGather('buildings');
+    } else if (window.game.global.turkimpTimer > 0) {
+        setGather('metal');
     } else {
         setGather('science');
     }
