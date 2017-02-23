@@ -34,17 +34,17 @@ window.RedAcesUI.healthAfterPrestige = function(base, prestige) {
 /** Equipment efficiency */
 
 window.RedAcesUI.displayEquipEfficiency = function () {
-    var costMult = Math.pow(1 - window.game.portal.Artisanistry.modifier, window.game.portal.Artisanistry.level),
+    var costMult = Math.pow(1 - game.portal.Artisanistry.modifier, game.portal.Artisanistry.level),
         items    = {"Health": [], "Attack": []},
         itemName,
         stat;
 
     // fill the array with the equipment information
-    for (itemName in window.game.equipment) {
-        if (!window.game.equipment.hasOwnProperty(itemName)) {
+    for (itemName in game.equipment) {
+        if (!game.equipment.hasOwnProperty(itemName)) {
             continue;
         }
-        var data = window.game.equipment[itemName],
+        var data = game.equipment[itemName],
             gain;
 
         if ((data.locked == 1) || data.hasOwnProperty('blockCalculated')) {
@@ -77,22 +77,22 @@ window.RedAcesUI.displayEquipEfficiency = function () {
     }
 
     // equipment prestiges
-    for (var upgradeName in window.game.upgrades) {
-        if (!window.game.upgrades.hasOwnProperty(upgradeName)) {
+    for (var upgradeName in game.upgrades) {
+        if (!game.upgrades.hasOwnProperty(upgradeName)) {
             continue;
         }
 
-        var upgradeData = window.game.upgrades[upgradeName];
+        var upgradeData = game.upgrades[upgradeName];
         if ((upgradeData.locked == 1)
             || !upgradeData.hasOwnProperty('prestiges')
-            || !window.game.equipment.hasOwnProperty(upgradeData.prestiges)
+            || !game.equipment.hasOwnProperty(upgradeData.prestiges)
             || !upgradeData.hasOwnProperty('cost')
             || !upgradeData.cost.hasOwnProperty('resources')
             || !upgradeData.cost.resources.hasOwnProperty('metal')
         ) {
             continue;
         }
-        var equipData = window.game.equipment[upgradeData.prestiges],
+        var equipData = game.equipment[upgradeData.prestiges],
             gain;
 
         if (equipData.hasOwnProperty('attack')) {
@@ -159,27 +159,27 @@ window.RedAcesUI.displayEquipEfficiency = function () {
 
 /** Hires x trimps for a job */
 window.RedAcesUI.hire = function(jobName, amount) {
-    var currentBuyAmount = window.game.global.buyAmt,
-        firingMode       = window.game.global.firing;
+    var currentBuyAmount = game.global.buyAmt,
+        firingMode       = game.global.firing;
 
     if (amount < 0) {
-        window.game.global.firing = true;
+        game.global.firing = true;
         amount                    = Math.abs(amount);
     } else {
-        window.game.global.firing = false;
+        game.global.firing = false;
     }
 
-    window.game.global.buyAmt = amount;
+    game.global.buyAmt = amount;
     buyJob(jobName, false, true);
-    window.game.global.buyAmt = currentBuyAmount;
-    window.game.global.firing = firingMode;
+    game.global.buyAmt = currentBuyAmount;
+    game.global.firing = firingMode;
 };
 
 /** Auto employment of trimps */
 window.RedAcesUI.autoEmployTrimps = function() {
-    if (window.game.global.world <= 5) {
+    if (game.global.world <= 5) {
         return;
-    } else if (window.game.global.world <= 150) {
+    } else if (game.global.world <= 150) {
         var jobRatios   = {
                 "Miner":      100,
                 "Lumberjack": 100,
@@ -197,17 +197,17 @@ window.RedAcesUI.autoEmployTrimps = function() {
             jobRatioSum = 161;
     }
 
-    var maxWorkerTrimps = Math.ceil(window.game.resources.trimps.realMax() / 2)
-        - window.game.jobs['Trainer'].owned
-        - window.game.jobs['Explorer'].owned
-        - window.game.jobs['Geneticist'].owned;
+    var maxWorkerTrimps = Math.ceil(game.resources.trimps.realMax() / 2)
+        - game.jobs['Trainer'].owned
+        - game.jobs['Explorer'].owned
+        - game.jobs['Geneticist'].owned;
 
     var trainerButton = document.getElementById('Trainer');
-    if ((trainerButton !== undefined) && trainerButton.classList.contains('thingColorCanAfford')) {
+    if (trainerButton !== undefined) {
         window.RedAcesUI.hire('Trainer', 'Max');
     }
     var explorerButton = document.getElementById('Explorer');
-    if ((explorerButton !== undefined) && explorerButton.classList.contains('thingColorCanAfford')) {
+    if (explorerButton !== undefined) {
         window.RedAcesUI.hire('Explorer', 'Max');
     }
 
@@ -217,7 +217,7 @@ window.RedAcesUI.autoEmployTrimps = function() {
         }
 
         var jobRatio           = jobRatios[jobName],
-            jobEmployees       = window.game.jobs[jobName].owned,
+            jobEmployees       = game.jobs[jobName].owned,
             targetJobEmployees = Math.floor(maxWorkerTrimps * jobRatio / jobRatioSum),
             nowHiring          = Math.floor(targetJobEmployees - jobEmployees);
 
@@ -251,53 +251,75 @@ window.RedAcesUI.autoBuild = function() {
         }
 
         var buildingMax    = buildings[buildingName],
-            currentAmount  = window.game.buildings[buildingName].purchased,
+            currentAmount  = game.buildings[buildingName].purchased,
             buildingButton = document.getElementById(buildingName);
 
         if ((buildingButton !== undefined)
-            && buildingButton.classList.contains('thingColorCanAfford')
             && ((buildingMax === -1) || (buildingMax > currentAmount))
         ) {
             window.RedAcesUI.build(buildingName, 1);
+        }
+    }
+
+    if (game.upgrades.Gigastation
+        // && (game.upgrades.Gigastation.locked == 0)
+        && game.buildings.Warpstation
+        && (game.buildings.Warpstation.locked == 0)
+    ) {
+        var warpstationZero    = 20,
+            warpstationDelta   = 4,
+            currentGigastation = game.upgrades.Gigastation.done,
+            currentWarpstation = game.buildings.Warpstation.purchased,
+            warpstationLimit   = warpstationZero + warpstationDelta * currentGigastation;
+
+        if (currentWarpstation < warpstationLimit) {
+            var affordableWarpstations = Math.min(
+                calculateMaxAfford(game.buildings.Warpstation, true, false, false, true),
+                warpstationLimit - currentWarpstation
+            );
+            window.RedAcesUI.build('Warpstation', affordableWarpstations);
+        } else if (game.upgrades.Gigastation.locked == 0) {
+            buyUpgrade('Gigastation', true, true);
         }
     }
 };
 
 /** Auto player employment */
 window.RedAcesUI.autoPlayerJob = function() {
-    if (window.game.global.buildingsQueue.length > 0) {
+    if (game.global.buildingsQueue.length > 0) {
         setGather('buildings');
+        return;
+    }
+
+    var importantUpgrades = [
+        "Speedlumber",
+        "Speedfarming",
+        "Speedminer",
+        "Speedscience",
+        "Megalumber",
+        "Megafarming",
+        "Megaminer",
+        "Megascience"
+    ];
+    for (var i in importantUpgrades) {
+        if (!importantUpgrades.hasOwnProperty(i)) {
+            continue;
+        }
+
+        var upgradeName = importantUpgrades[i],
+            upgrade     = game.upgrades[upgradeName];
+
+        if ((upgrade === undefined) || upgrade.locked || (upgrade.done >= upgrade.allowed)) {
+            continue;
+        }
+
+        setGather('science');
+        return;
+    }
+    if (game.global.turkimpTimer > 0) {
+        setGather('metal');
     } else {
-        var importantUpgrades = [
-            "Speedlumber",
-            "Speedfarming",
-            "Speedminer",
-            "Speedscience",
-            "Megalumber",
-            "Megafarming",
-            "Megaminer",
-            "Megascience"
-        ];
-        for (var i in importantUpgrades) {
-            if (!importantUpgrades.hasOwnProperty(i)) {
-                continue;
-            }
-
-            var upgradeName = importantUpgrades[i],
-                upgrade     = window.game.upgrades[upgradeName];
-
-            if ((upgrade === undefined) || upgrade.locked || (upgrade.done >= upgrade.allowed)) {
-                continue;
-            }
-
-            setGather('science');
-            return;
-        }
-        if (window.game.global.turkimpTimer > 0) {
-            setGather('metal');
-        } else {
-            setGather('science');
-        }
+        setGather('science');
     }
 };
 
