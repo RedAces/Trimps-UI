@@ -181,7 +181,9 @@ window.RedAcesUI.hire = function(jobName, amount) {
 
 /** Auto employment of trimps */
 window.RedAcesUI.autoEmployTrimps = function() {
-    if (window.game.global.world <= 150) {
+    if (window.game.global.world <= 5) {
+        return;
+    } else if (window.game.global.world <= 150) {
         var jobRatios   = {
                 "Miner":      100,
                 "Lumberjack": 100,
@@ -199,11 +201,10 @@ window.RedAcesUI.autoEmployTrimps = function() {
             jobRatioSum = 161;
     }
 
-    if (window.game.global.firing) {
-        return;
-    }
-
-    var maxWorkerTrimps = Math.ceil(window.game.resources.trimps.realMax() / 2);
+    var maxWorkerTrimps = Math.ceil(window.game.resources.trimps.realMax() / 2)
+        - window.game.jobs['Trainer'].owned
+        - window.game.jobs['Explorer'].owned
+        - window.game.jobs['Geneticist'].owned;
 
     if (document.getElementById('Trainer').classList.contains('thingColorCanAfford')) {
         window.RedAcesUI.hire('Trainer', 'Max');
