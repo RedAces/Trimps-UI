@@ -160,7 +160,7 @@ window.RedAcesUI.displayEquipEfficiency = function () {
 /** Auto employment of trimps */
 window.RedAcesUI.autoEmployTrimps = function() {
     var maxWorkerTrimps = Math.ceil(window.game.resources.trimps.realMax() / 2);
-    if (window.game.world < 150) {
+    if (window.game.global.world <= 150) {
         var jobRatios   = {
                 "Miner":      10,
                 "Lumberjack": 10,
@@ -178,25 +178,30 @@ window.RedAcesUI.autoEmployTrimps = function() {
             jobRatioSum = 13;
     }
 
+    if (window.game.global.firing) {
+        return;
+    }
+
     for (var jobName in jobRatios) {
         if (!jobRatios.hasOwnProperty(jobName)) {
             continue;
         }
 
-        var freeTrimps = maxWorkerTrimps - window.game.resources.trimps.employed
+        var freeTrimps = maxWorkerTrimps - window.game.resources.trimps.employed;
         if (freeTrimps <= 0) {
             return;
         }
 
         var jobRatio           = jobRatios[jobName],
             jobEmployees       = window.game.jobs[jobName].owned,
-            targetJobEmployees = maxWorkerTrimps / jobRatioSum * jobRatio;
+            targetJobEmployees = Math.floor(maxWorkerTrimps * jobRatio / jobRatioSum);
 
+        console.debug(jobName + ': job employees: ' + jobEmployees + ' target: ' + targetJobEmployees);
         if (jobEmployees >= targetJobEmployees) {
             continue;
         }
 
-        var nowHiring = Math.max(freeTrimps, targetJobEmployees - jobEmployees);
+        var nowHiring = Math.min(freeTrimps, Math.floor(targetJobEmployees - jobEmployees));
         if (nowHiring <= 0) {
             continue;
         }
@@ -204,6 +209,7 @@ window.RedAcesUI.autoEmployTrimps = function() {
         var currentBuyAmount      = window.game.global.buyAmt,
             tooltipShown          = document.getElementById("tooltipDiv").style.display !== 'none';
         window.game.global.buyAmt = nowHiring;
+        console.debug(jobName + ': now hiring ' + nowHiring);
         buyJob(jobName);
         if (!tooltipShown) {
             tooltip('hide');
