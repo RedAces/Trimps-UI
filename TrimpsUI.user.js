@@ -130,7 +130,6 @@ window.RedAcesUI.displayEquipEfficiency = function () {
                 efficiencySpan.id            = 'RedAcesUIEff' + itemName;
                 var itemElement = document.getElementById(itemName);
                 if (itemElement == undefined) {
-                    console.log('Couldnt find equipment ' + itemName);
                     continue;
                 }
                 itemElement.appendChild(efficiencySpan);
@@ -157,9 +156,20 @@ window.RedAcesUI.displayEquipEfficiency = function () {
     }
 };
 
+/** Hires x trimps for a job */
+window.RedAcesUI.hire = function(jobName, amount) {
+    var currentBuyAmount      = window.game.global.buyAmt,
+        tooltipShown          = document.getElementById("tooltipDiv").style.display !== 'none';
+    window.game.global.buyAmt = amount;
+    buyJob(jobName);
+    if (!tooltipShown) {
+        tooltip('hide');
+    }
+    window.game.global.buyAmt = currentBuyAmount;
+};
+
 /** Auto employment of trimps */
 window.RedAcesUI.autoEmployTrimps = function() {
-    var maxWorkerTrimps = Math.ceil(window.game.resources.trimps.realMax() / 2);
     if (window.game.global.world <= 150) {
         var jobRatios   = {
                 "Miner":      10,
@@ -182,12 +192,23 @@ window.RedAcesUI.autoEmployTrimps = function() {
         return;
     }
 
+    var maxWorkerTrimps = Math.ceil(window.game.resources.trimps.realMax() / 2),
+        freeTrimps      = maxWorkerTrimps - window.game.resources.trimps.employed;
+
+    if (freeTrimps <= 0) {
+        return;
+    }
+
+    if (document.getElementById('Trainer').classList.contains('thingColorCanAfford')) {
+        window.RedAcesUI.hire('Trainer', 'Max');
+    }
+
     for (var jobName in jobRatios) {
         if (!jobRatios.hasOwnProperty(jobName)) {
             continue;
         }
 
-        var freeTrimps = maxWorkerTrimps - window.game.resources.trimps.employed;
+        freeTrimps = maxWorkerTrimps - window.game.resources.trimps.employed;
         if (freeTrimps <= 0) {
             return;
         }
@@ -196,7 +217,6 @@ window.RedAcesUI.autoEmployTrimps = function() {
             jobEmployees       = window.game.jobs[jobName].owned,
             targetJobEmployees = Math.floor(maxWorkerTrimps * jobRatio / jobRatioSum);
 
-        console.debug(jobName + ': job employees: ' + jobEmployees + ' target: ' + targetJobEmployees);
         if (jobEmployees >= targetJobEmployees) {
             continue;
         }
@@ -206,15 +226,7 @@ window.RedAcesUI.autoEmployTrimps = function() {
             continue;
         }
 
-        var currentBuyAmount      = window.game.global.buyAmt,
-            tooltipShown          = document.getElementById("tooltipDiv").style.display !== 'none';
-        window.game.global.buyAmt = nowHiring;
-        console.debug(jobName + ': now hiring ' + nowHiring);
-        buyJob(jobName);
-        if (!tooltipShown) {
-            tooltip('hide');
-        }
-        window.game.global.buyAmt = currentBuyAmount;
+        window.RedAcesUI.hire(jobName, nowHiring);
     }
 };
 
