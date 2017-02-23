@@ -262,7 +262,6 @@ window.RedAcesUI.autoBuild = function() {
     }
 
     if (game.upgrades.Gigastation
-        // && (game.upgrades.Gigastation.locked == 0)
         && game.buildings.Warpstation
         && (game.buildings.Warpstation.locked == 0)
     ) {
@@ -277,7 +276,9 @@ window.RedAcesUI.autoBuild = function() {
                 calculateMaxAfford(game.buildings.Warpstation, true, false, false, true),
                 warpstationLimit - currentWarpstation
             );
-            window.RedAcesUI.build('Warpstation', affordableWarpstations);
+            if (affordableWarpstations > 0) {
+                window.RedAcesUI.build('Warpstation', affordableWarpstations);
+            }
         } else if (game.upgrades.Gigastation.locked == 0) {
             buyUpgrade('Gigastation', true, true);
         }
