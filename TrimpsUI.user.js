@@ -160,9 +160,7 @@ window.RedAcesUI.displayEquipEfficiency = function () {
 /** Hires x trimps for a job */
 window.RedAcesUI.hire = function(jobName, amount) {
     var currentBuyAmount = window.game.global.buyAmt,
-        firingMode       = window.game.global.firing,
-        tooltipDiv       = document.getElementById("tooltipDiv"),
-        tooltipShown     = tooltipDiv && tooltipDiv.style.display !== 'none';
+        firingMode       = window.game.global.firing;
 
     if (amount < 0) {
         window.game.global.firing = true;
@@ -172,10 +170,7 @@ window.RedAcesUI.hire = function(jobName, amount) {
     }
 
     window.game.global.buyAmt = amount;
-    buyJob(jobName);
-    if (!tooltipShown) {
-        tooltip('hide');
-    }
+    buyJob(jobName, false, true);
     window.game.global.buyAmt = currentBuyAmount;
     window.game.global.firing = firingMode;
 };
@@ -232,16 +227,8 @@ window.RedAcesUI.autoEmployTrimps = function() {
 
 /** Build x buildings */
 window.RedAcesUI.build = function(buildingName, amount) {
-    var currentBuyAmount = window.game.global.buyAmt,
-        tooltipDiv       = document.getElementById("tooltipDiv"),
-        tooltipShown     = tooltipDiv && tooltipDiv.style.display !== 'none';
-
-    window.game.global.buyAmt = amount;
-    buyBuilding(buildingName);
-    if (!tooltipShown) {
-        tooltip('hide');
-    }
-    window.game.global.buyAmt = currentBuyAmount;
+    buyBuilding(buildingName, false, true, amount);
+    setGather('buildings');
 };
 
 /** Auto building Buildings */
