@@ -2,6 +2,7 @@
 // @name           RedAces Trimps-UI
 // @namespace      https://github.com/RedAces/Trimps-UI
 // @description    Adds some UI elements to Trimps
+// @grant          none
 // @include        http://trimps.github.io
 // @include        https://trimps.github.io
 // @include        http://trimps.github.io/*
@@ -159,45 +160,50 @@ window.RedAcesUI.displayEquipEfficiency = function () {
 /** Hires x trimps for a job */
 window.RedAcesUI.hire = function(jobName, amount) {
     var currentBuyAmount      = window.game.global.buyAmt,
+        firingMode            = window.game.global.firing,
         tooltipShown          = document.getElementById("tooltipDiv").style.display !== 'none';
+
+    if (amount < 0) {
+        window.game.global.firing = true;
+        amount                    = Math.abs(amount);
+    } else {
+        window.game.global.firing = false;
+    }
+
     window.game.global.buyAmt = amount;
     buyJob(jobName);
     if (!tooltipShown) {
         tooltip('hide');
     }
     window.game.global.buyAmt = currentBuyAmount;
+    window.game.global.firing = firingMode;
 };
 
 /** Auto employment of trimps */
 window.RedAcesUI.autoEmployTrimps = function() {
     if (window.game.global.world <= 150) {
         var jobRatios   = {
-                "Miner":      10,
-                "Lumberjack": 10,
-                "Farmer":      1,
-                "Scientist":   1
+                "Miner":      100,
+                "Lumberjack": 100,
+                "Farmer":      10,
+                "Scientist":    1
             },
-            jobRatioSum = 22;
+            jobRatioSum = 211;
     } else {
         var jobRatios   = {
-                "Miner":      10,
-                "Lumberjack":  1,
-                "Farmer":      1,
-                "Scientist":   1
+                "Miner":      100,
+                "Lumberjack":  50,
+                "Farmer":      10,
+                "Scientist":    1
             },
-            jobRatioSum = 13;
+            jobRatioSum = 161;
     }
 
     if (window.game.global.firing) {
         return;
     }
 
-    var maxWorkerTrimps = Math.ceil(window.game.resources.trimps.realMax() / 2),
-        freeTrimps      = maxWorkerTrimps - window.game.resources.trimps.employed;
-
-    if (freeTrimps <= 0) {
-        return;
-    }
+    var maxWorkerTrimps = Math.ceil(window.game.resources.trimps.realMax() / 2);
 
     if (document.getElementById('Trainer').classList.contains('thingColorCanAfford')) {
         window.RedAcesUI.hire('Trainer', 'Max');
@@ -208,23 +214,10 @@ window.RedAcesUI.autoEmployTrimps = function() {
             continue;
         }
 
-        freeTrimps = maxWorkerTrimps - window.game.resources.trimps.employed;
-        if (freeTrimps <= 0) {
-            return;
-        }
-
         var jobRatio           = jobRatios[jobName],
             jobEmployees       = window.game.jobs[jobName].owned,
-            targetJobEmployees = Math.floor(maxWorkerTrimps * jobRatio / jobRatioSum);
-
-        if (jobEmployees >= targetJobEmployees) {
-            continue;
-        }
-
-        var nowHiring = Math.min(freeTrimps, Math.floor(targetJobEmployees - jobEmployees));
-        if (nowHiring <= 0) {
-            continue;
-        }
+            targetJobEmployees = Math.floor(maxWorkerTrimps * jobRatio / jobRatioSum),
+            nowHiring          = Math.floor(targetJobEmployees - jobEmployees);
 
         window.RedAcesUI.hire(jobName, nowHiring);
     }
