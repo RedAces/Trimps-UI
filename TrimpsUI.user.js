@@ -159,9 +159,10 @@ window.RedAcesUI.displayEquipEfficiency = function () {
 
 /** Hires x trimps for a job */
 window.RedAcesUI.hire = function(jobName, amount) {
-    var currentBuyAmount      = window.game.global.buyAmt,
-        firingMode            = window.game.global.firing,
-        tooltipShown          = document.getElementById("tooltipDiv").style.display !== 'none';
+    var currentBuyAmount = window.game.global.buyAmt,
+        firingMode       = window.game.global.firing,
+        tooltipDiv       = document.getElementById("tooltipDiv"),
+        tooltipShown     = tooltipDiv && tooltipDiv.style.display !== 'none';
 
     if (amount < 0) {
         window.game.global.firing = true;
@@ -206,8 +207,13 @@ window.RedAcesUI.autoEmployTrimps = function() {
         - window.game.jobs['Explorer'].owned
         - window.game.jobs['Geneticist'].owned;
 
-    if (document.getElementById('Trainer').classList.contains('thingColorCanAfford')) {
+    var trainerButton = document.getElementById('Trainer');
+    if ((trainerButton !== undefined) && trainerButton.classList.contains('thingColorCanAfford')) {
         window.RedAcesUI.hire('Trainer', 'Max');
+    }
+    var explorerButton = document.getElementById('Explorer');
+    if ((explorerButton !== undefined) && explorerButton.classList.contains('thingColorCanAfford')) {
+        window.RedAcesUI.hire('Explorer', 'Max');
     }
 
     for (var jobName in jobRatios) {
@@ -224,30 +230,48 @@ window.RedAcesUI.autoEmployTrimps = function() {
     }
 };
 
+/** Build x buildings */
+window.RedAcesUI.build = function(buildingName, amount) {
+    var currentBuyAmount = window.game.global.buyAmt,
+        tooltipDiv       = document.getElementById("tooltipDiv"),
+        tooltipShown     = tooltipDiv && tooltipDiv.style.display !== 'none';
+
+    window.game.global.buyAmt = amount;
+    buyBuilding(buildingName);
+    if (!tooltipShown) {
+        tooltip('hide');
+    }
+    window.game.global.buyAmt = currentBuyAmount;
+};
+
 /** Auto building Buildings */
 window.RedAcesUI.autoBuild = function() {
-    var buildings = [
-        "Gym",
-        "Tribute"
-    ];
+    var buildings = {
+        "Gym":       -1,
+        "Tribute":   -1,
+        "Collector": 41,
+        "Gateway":   25,
+        "Resort":    50,
+        "Hotel":     75,
+        "Mansion":  100,
+        "House":    100,
+        "Hut":      100
+    };
 
-    for (var i in buildings) {
-        if (!buildings.hasOwnProperty(i)) {
+    for (var buildingName in buildings) {
+        if (!buildings.hasOwnProperty(buildingName)) {
             continue;
         }
 
-        var building       = buildings[i],
-            buildingButton = document.getElementById(building);
+        var buildingMax    = buildings[buildingName],
+            currentAmount  = window.game.buildings[buildingName].purchased,
+            buildingButton = document.getElementById(buildingName);
 
-        if (buildingButton.classList.contains('thingColorCanAfford')) {
-            var currentBuyAmount      = window.game.global.buyAmt,
-                tooltipShown          = document.getElementById("tooltipDiv").style.display !== 'none';
-            window.game.global.buyAmt = "Max";
-            buyBuilding(building);
-            if (!tooltipShown) {
-                tooltip('hide');
-            }
-            window.game.global.buyAmt = currentBuyAmount;
+        if ((buildingButton !== undefined)
+            && buildingButton.classList.contains('thingColorCanAfford')
+            && ((buildingMax === -1) || (buildingMax > currentAmount))
+        ) {
+            window.RedAcesUI.build(buildingName, 1);
         }
     }
 };
@@ -256,10 +280,37 @@ window.RedAcesUI.autoBuild = function() {
 window.RedAcesUI.autoPlayerJob = function() {
     if (window.game.global.buildingsQueue.length > 0) {
         setGather('buildings');
-    } else if (window.game.global.turkimpTimer > 0) {
-        setGather('metal');
     } else {
-        setGather('science');
+        var importantUpgrades = [
+            "Speedlumber",
+            "Speedfarming",
+            "Speedminer",
+            "Speedscience",
+            "Megalumber",
+            "Megafarming",
+            "Megaminer",
+            "Megascience"
+        ];
+        for (var i in importantUpgrades) {
+            if (!importantUpgrades.hasOwnProperty(i)) {
+                continue;
+            }
+
+            var upgradeName = importantUpgrades[i],
+                upgrade     = window.game.upgrades[upgradeName];
+
+            if ((upgrade === undefined) || upgrade.locked || (upgrade.done >= upgrade.allowed)) {
+                continue;
+            }
+
+            setGather('science');
+            return;
+        }
+        if (window.game.global.turkimpTimer > 0) {
+            setGather('metal');
+        } else {
+            setGather('science');
+        }
     }
 };
 
