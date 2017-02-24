@@ -276,10 +276,7 @@ window.RedAcesUI.autoBuild = function() {
         }
     }
 
-    if (game.upgrades.Gigastation
-        && game.buildings.Warpstation
-        && (game.buildings.Warpstation.locked == 0)
-    ) {
+    if (game.upgrades.Gigastation && game.buildings.Warpstation) {
         var warpstationZero    = 20,
             warpstationDelta   = 4,
             currentGigastation = game.upgrades.Gigastation.done,
