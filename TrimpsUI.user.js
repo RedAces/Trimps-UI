@@ -306,7 +306,8 @@ window.RedAcesUI.autoPlayerJob = function() {
         "Megalumber",
         "Megafarming",
         "Megaminer",
-        "Megascience"
+        "Megascience",
+        "Gymystic"
     ];
     for (var i in importantUpgrades) {
         if (!importantUpgrades.hasOwnProperty(i)) {
