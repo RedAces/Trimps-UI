@@ -243,7 +243,10 @@ window.RedAcesUI.build = function(buildingName, amount) {
             return;
         }
     }
-    buyBuilding(buildingName, false, true, amount);
+    var currentBuyAmount = game.global.buyAmt;
+    game.global.buyAmt = amount;
+    buyBuilding(buildingName, false, true);
+    game.global.buyAmt = currentBuyAmount;
     setGather('buildings');
 };
 
@@ -252,6 +255,7 @@ window.RedAcesUI.autoBuild = function() {
     var buildings = {
         "Gym":       -1,
         "Tribute":   -1,
+        "Nursery":   -1,
         "Collector": 41,
         "Gateway":   25,
         "Resort":    50,
