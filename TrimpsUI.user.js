@@ -162,11 +162,18 @@ window.RedAcesUI.hire = function(jobName, amount) {
     var currentBuyAmount = game.global.buyAmt,
         firingMode       = game.global.firing;
 
-    if (amount < 0) {
+    if (amount === "Max") {
+        // do nothing
+    } else if (amount < 0) {
         game.global.firing = true;
-        amount                    = Math.abs(amount);
+        amount             = Math.abs(amount);
     } else {
         game.global.firing = false;
+        amount             = Math.min(amount, calculateMaxAfford(game.jobs[jobName], false, false, true));
+    }
+
+    if ((amount === 0) || (game.jobs[jobName].locked)) {
+        return;
     }
 
     game.global.buyAmt = amount;
@@ -227,6 +234,15 @@ window.RedAcesUI.autoEmployTrimps = function() {
 
 /** Build x buildings */
 window.RedAcesUI.build = function(buildingName, amount) {
+    if (game.buildings[buildingName].locked) {
+        return;
+    }
+    if (amount !== "Max") {
+        amount = Math.min(amount, calculateMaxAfford(game.buildings[buildingName], true, false, false, true));
+        if (amount <= 0) {
+            return;
+        }
+    }
     buyBuilding(buildingName, false, true, amount);
     setGather('buildings');
 };
@@ -251,13 +267,12 @@ window.RedAcesUI.autoBuild = function() {
         }
 
         var buildingMax    = buildings[buildingName],
-            currentAmount  = game.buildings[buildingName].purchased,
-            buildingButton = document.getElementById(buildingName);
+            currentAmount  = game.buildings[buildingName].purchased;
 
-        if ((buildingButton !== undefined)
-            && ((buildingMax === -1) || (buildingMax > currentAmount))
-        ) {
-            window.RedAcesUI.build(buildingName, 1);
+        if (buildingMax === -1) {
+            window.RedAcesUI.build(buildingName, "Max");
+        } else if (buildingMax > currentAmount) {
+            window.RedAcesUI.build(buildingName, buildingMax - currentAmount);
         }
     }
 
@@ -272,13 +287,7 @@ window.RedAcesUI.autoBuild = function() {
             warpstationLimit   = warpstationZero + warpstationDelta * currentGigastation;
 
         if (currentWarpstation < warpstationLimit) {
-            var affordableWarpstations = Math.min(
-                calculateMaxAfford(game.buildings.Warpstation, true, false, false, true),
-                warpstationLimit - currentWarpstation
-            );
-            if (affordableWarpstations > 0) {
-                window.RedAcesUI.build('Warpstation', affordableWarpstations);
-            }
+            window.RedAcesUI.build('Warpstation', warpstationLimit - currentWarpstation);
         } else if (game.upgrades.Gigastation.locked == 0) {
             buyUpgrade('Gigastation', true, true);
         }
