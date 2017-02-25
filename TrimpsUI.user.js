@@ -64,7 +64,7 @@ window.RedAcesUI.healthAfterPrestige = function(base, prestige) {
 
 /** Build x buildings */
 window.RedAcesUI.buyEquipment = function(equipmentName, amount) {
-    if (game.equipment[equipmentName].locked) {
+    if (!game.equipment.hasOwnProperty(equipmentName) || game.equipment[equipmentName].locked) {
         return;
     }
     if (amount !== "Max") {
@@ -217,7 +217,7 @@ window.RedAcesUI.displayEfficiency = function () {
 
 /** Hires x trimps for a job */
 window.RedAcesUI.hire = function(jobName, amount) {
-    if (!game.jobs.hasOwnProperty(jobName)) {
+    if (!game.jobs.hasOwnProperty(jobName) || (game.jobs[jobName].locked)) {
         return
     }
     var currentBuyAmount = game.global.buyAmt,
@@ -233,7 +233,7 @@ window.RedAcesUI.hire = function(jobName, amount) {
         amount             = Math.min(amount, calculateMaxAfford(game.jobs[jobName], false, false, true));
     }
 
-    if ((amount === 0) || (game.jobs[jobName].locked)) {
+    if (amount === 0) {
         return;
     }
 
@@ -268,19 +268,22 @@ window.RedAcesUI.autoHireTrimps = function() {
             jobRatioSum = 161;
     }
 
-    var maxWorkerTrimps = Math.ceil(game.resources.trimps.realMax() / 2)
-        - game.jobs['Trainer'].owned
-        - game.jobs['Explorer'].owned
-        - game.jobs['Geneticist'].owned;
+    var maxWorkerTrimps = Math.ceil(game.resources.trimps.realMax() / 2);
 
-    var trainerButton = document.getElementById('Trainer');
-    if (trainerButton !== undefined) {
-        window.RedAcesUI.hire('Trainer', 'Max');
+    if (game.jobs.hasOwnProperty('Trainer')) {
+        maxWorkerTrimps -= game.jobs['Trainer'].owned;
     }
-    var explorerButton = document.getElementById('Explorer');
-    if (explorerButton !== undefined) {
-        window.RedAcesUI.hire('Explorer', 'Max');
+
+    if (game.jobs.hasOwnProperty('Explorer')) {
+        maxWorkerTrimps -= game.jobs['Explorer'].owned;
     }
+
+    if (game.jobs.hasOwnProperty('Geneticist')) {
+        maxWorkerTrimps -= game.jobs['Geneticist'].owned;
+    }
+
+    window.RedAcesUI.hire('Trainer', 'Max');
+    window.RedAcesUI.hire('Explorer', 'Max');
 
     for (var jobName in jobRatios) {
         if (!jobRatios.hasOwnProperty(jobName) || !game.jobs.hasOwnProperty(jobName)) {
