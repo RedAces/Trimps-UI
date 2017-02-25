@@ -222,6 +222,14 @@ window.RedAcesUI.displayEfficiency = function () {
             }
         }
     }
+
+    // Special case: Shield
+    if (game.equipment.hasOwnProperty('Shield')
+        && (game.equipment.Shield.locked == 0)
+        && (game.equipment.Shield.level < window.RedAcesUI.options.autoBuyEquipment.maxLevel)
+    ) {
+        window.RedAcesUI.buyEquipment('Shield', 1);
+    }
 };
 
 /** Hires x trimps for a job */
