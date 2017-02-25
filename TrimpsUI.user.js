@@ -29,7 +29,8 @@ window.RedAcesUI.options = {
         }
     },
     "autoHireTrimps": {
-        "enabled": 1
+        "enabled":         1,
+        "fireAllForVoids": 1
     },
     "autoGather": {
         "enabled": 1
@@ -38,7 +39,10 @@ window.RedAcesUI.options = {
         "enabled": 1
     },
     "autoBuyEquipment": {
-        "enabled": 1
+        "enabled":            1,
+        "minLevel":           2,
+        "maxLevel":           5,
+        "maxRelEfficiency": 1.5
     }
 };
 
@@ -175,6 +179,10 @@ window.RedAcesUI.displayEfficiency = function () {
 
             itemName = items[stat][i].item;
 
+            if (i == 0) {
+                bestStatEfficiency = items[stat][i].costPerValue;
+            }
+
             if (window.RedAcesUI.options.displayEfficiency.enabled) {
                 var efficiencySpan = document.getElementById('RedAcesUIEff' + itemName);
 
@@ -190,8 +198,7 @@ window.RedAcesUI.displayEfficiency = function () {
 
                 var cssColor = '';
                 if (i == 0) {
-                    cssColor           = 'background-color:green;';
-                    bestStatEfficiency = items[stat][i].costPerValue;
+                    cssColor = 'background-color:green;';
                 } else if (i == 1) {
                     cssColor = 'background-color:yellow;color:black;';
                 }
@@ -204,9 +211,11 @@ window.RedAcesUI.displayEfficiency = function () {
             if (window.RedAcesUI.options.autoBuyEquipment.enabled) {
                 if (game.equipment.hasOwnProperty(itemName)) {
                     equipData = game.equipment[itemName];
-                    if (equipData.level < 2) {
+                    if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.minLevel) {
                         window.RedAcesUI.buyEquipment(itemName, 1);
-                    } else if ((equipData.level < 5) && (i < 2)) {
+                    } else if ((equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevel)
+                        && (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency)
+                    ) {
                         window.RedAcesUI.buyEquipment(itemName, 1);
                     }
                 }
@@ -227,10 +236,18 @@ window.RedAcesUI.hire = function(jobName, amount) {
         // do nothing
     } else if (amount < 0) {
         game.global.firing = true;
-        amount             = Math.abs(amount);
+        amount             = Math.min(
+            Math.abs(amount),
+            game.jobs[jobName].owned
+        );
     } else {
         game.global.firing = false;
-        amount             = Math.min(amount, calculateMaxAfford(game.jobs[jobName], false, false, true));
+        amount             = Math.min(
+            amount,
+            calculateMaxAfford(game.jobs[jobName], false, false, true),
+            // unemployed
+            Math.ceil(game.resources.trimps.realMax() / 2) - game.resources.trimps.employed
+        );
     }
 
     if (amount === 0) {
@@ -248,8 +265,21 @@ window.RedAcesUI.autoHireTrimps = function() {
     if (!window.RedAcesUI.options.autoHireTrimps.enabled) {
         return;
     }
+
+    var mapObj = getCurrentMapObject();
     if (game.global.world <= 5) {
         return;
+    } else if ((mapObj !== undefined)
+        && (mapObj.location == "Void")
+        && window.RedAcesUI.options.autoHireTrimps.fireAllForVoids
+    ) {
+        var jobRatios = {
+                "Miner":      0,
+                "Lumberjack": 0,
+                "Farmer":     0,
+                "Scientist":  0
+            },
+            jobRatioSum = 1;
     } else if (game.global.world <= 150) {
         var jobRatios   = {
                 "Miner":      100,
