@@ -9,7 +9,38 @@
 // @include        https://trimps.github.io/*
 // ==/UserScript==
 
-window.RedAcesUI = window.RedAcesUI || {};
+window.RedAcesUI         = window.RedAcesUI || {};
+window.RedAcesUI.options = {
+    "autoBuild": {
+        "enabled":           1,
+        "warpstationZero":  20,
+        "warpstationDelta":  4,
+        "buildings":         {
+            "Gym":       -1,
+            "Tribute":   -1,
+            "Nursery":   -1,
+            "Collector": 41,
+            "Gateway":   25,
+            "Resort":    50,
+            "Hotel":     75,
+            "Mansion":  100,
+            "House":    100,
+            "Hut":      100
+        }
+    },
+    "autoHireTrimps": {
+        "enabled": 1
+    },
+    "autoGather": {
+        "enabled": 1
+    },
+    "displayEfficiency": {
+        "enabled": 1
+    },
+    "autoBuyEquipment": {
+        "enabled": 1
+    }
+};
 
 /** Prestige efficiency calculation */
 
@@ -31,9 +62,28 @@ window.RedAcesUI.healthAfterPrestige = function(base, prestige) {
     return base * 13.61 * Math.pow(11.42, prestige - 1);
 };
 
-/** Equipment efficiency */
+/** Build x buildings */
+window.RedAcesUI.buyEquipment = function(equipmentName, amount) {
+    if (game.equipment[equipmentName].locked) {
+        return;
+    }
+    if (amount !== "Max") {
+        amount = Math.min(amount, calculateMaxAfford(game.equipment[equipmentName], false, true));
+        if (amount <= 0) {
+            return;
+        }
+    }
+    var currentBuyAmount = game.global.buyAmt;
+    game.global.buyAmt   = amount;
+    buyEquipment(equipmentName, false, true);
+    game.global.buyAmt   = currentBuyAmount;
+};
 
-window.RedAcesUI.displayEquipEfficiency = function () {
+/** Equipment efficiency */
+window.RedAcesUI.displayEfficiency = function () {
+    if (!window.RedAcesUI.options.displayEfficiency.enabled && !window.RedAcesUI.options.autoBuyEquipment.enabled) {
+        return;
+    }
     var costMult = Math.pow(1 - game.portal.Artisanistry.modifier, game.portal.Artisanistry.level),
         items    = {"Health": [], "Attack": []},
         itemName,
@@ -117,6 +167,7 @@ window.RedAcesUI.displayEquipEfficiency = function () {
             }
         );
 
+        var bestStatEfficiency = 1;
         for (var i in items[stat]) {
             if (!items[stat].hasOwnProperty(i)) {
                 continue;
@@ -124,41 +175,51 @@ window.RedAcesUI.displayEquipEfficiency = function () {
 
             itemName = items[stat][i].item;
 
-            var efficiencySpan = document.getElementById('RedAcesUIEff' + itemName);
+            if (window.RedAcesUI.options.displayEfficiency.enabled) {
+                var efficiencySpan = document.getElementById('RedAcesUIEff' + itemName);
 
-            if (efficiencySpan == undefined) {
-                efficiencySpan               = document.createElement('span');
-                efficiencySpan.id            = 'RedAcesUIEff' + itemName;
-                var itemElement = document.getElementById(itemName);
-                if (itemElement == undefined) {
-                    continue;
+                if (efficiencySpan == undefined) {
+                    efficiencySpan = document.createElement('span');
+                    efficiencySpan.id = 'RedAcesUIEff' + itemName;
+                    var itemElement = document.getElementById(itemName);
+                    if (itemElement == undefined) {
+                        continue;
+                    }
+                    itemElement.appendChild(efficiencySpan);
                 }
-                itemElement.appendChild(efficiencySpan);
+
+                var cssColor = '';
+                if (i == 0) {
+                    cssColor           = 'background-color:green;';
+                    bestStatEfficiency = items[stat][i].costPerValue;
+                } else if (i == 1) {
+                    cssColor = 'background-color:yellow;color:black;';
+                }
+
+                efficiencySpan.innerHTML = '<br/><span style="padding:2px 5px;' + cssColor + '">'
+                    + stat + ' #' + (1 * i + 1) + ' ('
+                    + (items[stat][i].costPerValue / bestStatEfficiency * 100).toFixed(1) + '%)</span>';
             }
 
-            var cssColor = '';
-            if (i == 0) {
-                cssColor = 'background-color:green;';
-            } else if (i == 1) {
-                cssColor = 'background-color:yellow;color:black;';
+            if (window.RedAcesUI.options.autoBuyEquipment.enabled) {
+                if (game.equipment.hasOwnProperty(itemName)) {
+                    equipData = game.equipment[itemName];
+                    if (equipData.level < 2) {
+                        window.RedAcesUI.buyEquipment(itemName, 1);
+                    } else if ((equipData.level < 5) && (i < 2)) {
+                        window.RedAcesUI.buyEquipment(itemName, 1);
+                    }
+                }
             }
-
-            var costPerValue = items[stat][i].costPerValue,
-                exponent     = 0;
-
-            while (costPerValue > 1000) {
-                costPerValue = costPerValue / 1000;
-                exponent     = exponent + 3;
-            }
-
-            efficiencySpan.innerHTML     = '<br/><span style="padding:2px 5px;' + cssColor + '">'
-                + stat  + ' #' + (1 * i + 1) + ' (' + costPerValue.toFixed(1) + 'e' + exponent + ')</span>';
         }
     }
 };
 
 /** Hires x trimps for a job */
 window.RedAcesUI.hire = function(jobName, amount) {
+    if (!game.jobs.hasOwnProperty(jobName)) {
+        return
+    }
     var currentBuyAmount = game.global.buyAmt,
         firingMode       = game.global.firing;
 
@@ -183,7 +244,10 @@ window.RedAcesUI.hire = function(jobName, amount) {
 };
 
 /** Auto employment of trimps */
-window.RedAcesUI.autoEmployTrimps = function() {
+window.RedAcesUI.autoHireTrimps = function() {
+    if (!window.RedAcesUI.options.autoHireTrimps.enabled) {
+        return;
+    }
     if (game.global.world <= 5) {
         return;
     } else if (game.global.world <= 150) {
@@ -219,22 +283,21 @@ window.RedAcesUI.autoEmployTrimps = function() {
     }
 
     for (var jobName in jobRatios) {
-        if (!jobRatios.hasOwnProperty(jobName)) {
+        if (!jobRatios.hasOwnProperty(jobName) || !game.jobs.hasOwnProperty(jobName)) {
             continue;
         }
 
         var jobRatio           = jobRatios[jobName],
             jobEmployees       = game.jobs[jobName].owned,
-            targetJobEmployees = Math.floor(maxWorkerTrimps * jobRatio / jobRatioSum),
-            nowHiring          = Math.floor(targetJobEmployees - jobEmployees);
+            targetJobEmployees = Math.floor(maxWorkerTrimps * jobRatio / jobRatioSum);
 
-        window.RedAcesUI.hire(jobName, nowHiring);
+        window.RedAcesUI.hire(jobName, Math.floor(targetJobEmployees - jobEmployees));
     }
 };
 
 /** Build x buildings */
 window.RedAcesUI.build = function(buildingName, amount) {
-    if (game.buildings[buildingName].locked) {
+    if (!game.buildings.hasOwnProperty(buildingName) || game.buildings[buildingName].locked) {
         return;
     }
     if (amount !== "Max") {
@@ -244,33 +307,26 @@ window.RedAcesUI.build = function(buildingName, amount) {
         }
     }
     var currentBuyAmount = game.global.buyAmt;
-    game.global.buyAmt = amount;
+    game.global.buyAmt   = amount;
     buyBuilding(buildingName, false, true);
-    game.global.buyAmt = currentBuyAmount;
+    game.global.buyAmt   = currentBuyAmount;
     setGather('buildings');
 };
 
 /** Auto building Buildings */
 window.RedAcesUI.autoBuild = function() {
-    var buildings = {
-        "Gym":       -1,
-        "Tribute":   -1,
-        "Nursery":   -1,
-        "Collector": 41,
-        "Gateway":   25,
-        "Resort":    50,
-        "Hotel":     75,
-        "Mansion":  100,
-        "House":    100,
-        "Hut":      100
-    };
+    if (!window.RedAcesUI.options.autoBuild.enabled) {
+        return;
+    }
 
-    for (var buildingName in buildings) {
-        if (!buildings.hasOwnProperty(buildingName)) {
+    for (var buildingName in window.RedAcesUI.options.autoBuild.buildings) {
+        if (!window.RedAcesUI.options.autoBuild.buildings.hasOwnProperty(buildingName)
+            || !game.buildings.hasOwnProperty(buildingName)
+        ) {
             continue;
         }
 
-        var buildingMax    = buildings[buildingName],
+        var buildingMax    = window.RedAcesUI.options.autoBuild.buildings[buildingName],
             currentAmount  = game.buildings[buildingName].purchased;
 
         if (buildingMax === -1) {
@@ -280,12 +336,11 @@ window.RedAcesUI.autoBuild = function() {
         }
     }
 
-    if (game.upgrades.Gigastation && game.buildings.Warpstation) {
-        var warpstationZero    = 20,
-            warpstationDelta   = 4,
-            currentGigastation = game.upgrades.Gigastation.done,
+    if (game.upgrades.hasOwnProperty('Gigastation') && game.buildings.hasOwnProperty('Warpstation')) {
+        var currentGigastation = game.upgrades.Gigastation.done,
             currentWarpstation = game.buildings.Warpstation.purchased,
-            warpstationLimit   = warpstationZero + warpstationDelta * currentGigastation;
+            warpstationLimit   = window.RedAcesUI.options.autoBuild.warpstationZero
+                + window.RedAcesUI.options.autoBuild.warpstationDelta * currentGigastation;
 
         if (currentWarpstation < warpstationLimit) {
             window.RedAcesUI.build('Warpstation', warpstationLimit - currentWarpstation);
@@ -296,7 +351,10 @@ window.RedAcesUI.autoBuild = function() {
 };
 
 /** Auto player employment */
-window.RedAcesUI.autoPlayerJob = function() {
+window.RedAcesUI.autoGather = function() {
+    if (!window.RedAcesUI.options.autoGather.enabled) {
+        return;
+    }
     if (game.global.buildingsQueue.length > 0) {
         setGather('buildings');
         return;
@@ -318,10 +376,15 @@ window.RedAcesUI.autoPlayerJob = function() {
             continue;
         }
 
-        var upgradeName = importantUpgrades[i],
-            upgrade     = game.upgrades[upgradeName];
+        var upgradeName = importantUpgrades[i];
 
-        if ((upgrade === undefined) || upgrade.locked || (upgrade.done >= upgrade.allowed)) {
+        if (!game.upgrades.hasOwnProperty(upgradeName)) {
+            continue;
+        }
+
+        var upgrade = game.upgrades[upgradeName];
+
+        if (upgrade.locked || (upgrade.done >= upgrade.allowed)) {
             continue;
         }
 
@@ -338,11 +401,10 @@ window.RedAcesUI.autoPlayerJob = function() {
 /** init main loop */
 
 window.RedAcesUI.mainLoop = function() {
-    window.RedAcesUI.autoEmployTrimps();
+    window.RedAcesUI.autoHireTrimps();
     window.RedAcesUI.autoBuild();
-    window.RedAcesUI.autoPlayerJob();
-
-    window.RedAcesUI.displayEquipEfficiency();
+    window.RedAcesUI.autoGather();
+    window.RedAcesUI.displayEfficiency();
 };
 
 if (window.RedAcesUI.mainTimer) {
