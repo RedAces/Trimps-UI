@@ -91,7 +91,8 @@ window.RedAcesUI.displayEfficiency = function () {
     var costMult = Math.pow(1 - game.portal.Artisanistry.modifier, game.portal.Artisanistry.level),
         items    = {"Health": [], "Attack": []},
         itemName,
-        stat;
+        stat,
+        itemPrestiges = {};
 
     // fill the array with the equipment information
     for (itemName in game.equipment) {
@@ -137,9 +138,16 @@ window.RedAcesUI.displayEfficiency = function () {
         }
 
         var upgradeData = game.upgrades[upgradeName];
-        if ((upgradeData.locked == 1)
-            || !upgradeData.hasOwnProperty('prestiges')
+
+        if (!upgradeData.hasOwnProperty('prestiges')
             || !game.equipment.hasOwnProperty(upgradeData.prestiges)
+        ) {
+            continue;
+        }
+
+        itemPrestiges[upgradeData.prestiges] = upgradeData;
+
+        if ((upgradeData.locked == 1)
             || !upgradeData.hasOwnProperty('cost')
             || !upgradeData.cost.hasOwnProperty('resources')
             || !upgradeData.cost.resources.hasOwnProperty('metal')
@@ -199,13 +207,13 @@ window.RedAcesUI.displayEfficiency = function () {
                 var cssColor = '';
                 if (i == 0) {
                     cssColor = 'background-color:green;';
-                } else if (i == 1) {
+                } else if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
                     cssColor = 'background-color:yellow;color:black;';
                 }
 
                 efficiencySpan.innerHTML = '<br/><span style="padding:2px 5px;' + cssColor + '">'
                     + stat + ' #' + (1 * i + 1) + ' ('
-                    + (items[stat][i].costPerValue / bestStatEfficiency * 100).toFixed(1) + '%)</span>';
+                    + (items[stat][i].costPerValue / bestStatEfficiency * 100).toFixed(0) + ' %)</span>';
             }
 
             if (window.RedAcesUI.options.autoBuyEquipment.enabled) {
@@ -213,10 +221,15 @@ window.RedAcesUI.displayEfficiency = function () {
                     equipData = game.equipment[itemName];
                     if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.minLevel) {
                         window.RedAcesUI.buyEquipment(itemName, 1);
-                    } else if ((equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevel)
-                        && (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency)
-                    ) {
-                        window.RedAcesUI.buyEquipment(itemName, 1);
+                    } else if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
+                        if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevel) {
+                            window.RedAcesUI.buyEquipment(itemName, 1);
+                        } else if (itemPrestiges.hasOwnProperty(itemName)
+                            && (itemPrestiges[itemName].allowed === itemPrestiges[itemName].done)
+                        ) {
+                            // there is no prestige available
+                            window.RedAcesUI.buyEquipment(itemName, 1);
+                        }
                     }
                 }
             }
