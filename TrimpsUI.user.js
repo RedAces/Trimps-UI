@@ -30,7 +30,8 @@ window.RedAcesUI.options = {
     },
     "autoHireTrimps": {
         "enabled":         1,
-        "fireAllForVoids": 1
+        "fireAllForVoids": 1,
+        "startWorldZone":  5
     },
     "autoGather": {
         "enabled": 1
@@ -213,7 +214,7 @@ window.RedAcesUI.displayEfficiency = function () {
 
                 efficiencySpan.innerHTML = '<br/><span style="padding:2px 5px;' + cssColor + '">'
                     + stat + ' #' + (1 * i + 1) + ' ('
-                    + (items[stat][i].costPerValue / bestStatEfficiency * 100).toFixed(0) + ' %)</span>';
+                    + (items[stat][i].costPerValue / bestStatEfficiency * 100).toFixed(0) + '%)</span>';
             }
 
             if (window.RedAcesUI.options.autoBuyEquipment.enabled) {
@@ -288,7 +289,7 @@ window.RedAcesUI.autoHireTrimps = function() {
     }
 
     var mapObj = getCurrentMapObject();
-    if (game.global.world <= 5) {
+    if (game.global.world < window.RedAcesUI.options.autoHireTrimps.startWorldZone) {
         return;
     } else if ((mapObj !== undefined)
         && (mapObj.location == "Void")
