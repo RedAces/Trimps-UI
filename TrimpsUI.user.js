@@ -411,8 +411,8 @@ window.RedAcesUI.autoBuild = function() {
         && (game.buildings.Collector.locked == 0)
         && game.buildings.hasOwnProperty('Warpstation')
     ) {
-        var collectorGemCost   = game.buildings.Collector.cost.gems[0] * Math.pow(game.buildings.Collector.cost.gems[0], game.buildings.Collector.level),
-            warpstationGemCost = game.buildings.Warpstation.cost.gems[0] * Math.pow(game.buildings.Warpstation.cost.gems[0], game.buildings.Warpstation.level);
+        var collectorGemCost   = game.buildings.Collector.cost.gems[0] * Math.pow(game.buildings.Collector.cost.gems[1], game.buildings.Collector.purchased),
+            warpstationGemCost = game.buildings.Warpstation.cost.gems[0] * Math.pow(game.buildings.Warpstation.cost.gems[1], game.buildings.Warpstation.purchased);
 
         if (collectorGemCost / warpstationGemCost < RedAcesUI.options.autoBuild.relGemCostForCheapCollector) {
             window.RedAcesUI.build('Collector', 1);
