@@ -26,7 +26,8 @@ window.RedAcesUI.options = {
             "Mansion":  100,
             "House":    100,
             "Hut":      100
-        }
+        },
+        "relGemCostForCheapCollector": 0.1
     },
     "autoHireTrimps": {
         "enabled":         1,
@@ -40,10 +41,11 @@ window.RedAcesUI.options = {
         "enabled": 1
     },
     "autoBuyEquipment": {
-        "enabled":            1,
-        "minLevel":           2,
-        "maxLevel":           5,
-        "maxRelEfficiency": 1.5
+        "enabled":                      1,
+        "minLevel":                     2,
+        "maxLevelPrestigeAvailable":    9,
+        "maxLevelPrestigeUnavailable": 40,
+        "maxRelEfficiency":           1.5
     }
 };
 
@@ -223,10 +225,11 @@ window.RedAcesUI.displayEfficiency = function () {
                     if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.minLevel) {
                         window.RedAcesUI.buyEquipment(itemName, 1);
                     } else if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
-                        if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevel) {
+                        if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable) {
                             window.RedAcesUI.buyEquipment(itemName, 1);
                         } else if (itemPrestiges.hasOwnProperty(itemName)
                             && (itemPrestiges[itemName].allowed === itemPrestiges[itemName].done)
+                            && (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeUnavailable)
                         ) {
                             // there is no prestige available
                             window.RedAcesUI.buyEquipment(itemName, 1);
@@ -240,7 +243,7 @@ window.RedAcesUI.displayEfficiency = function () {
     // Special case: Shield
     if (game.equipment.hasOwnProperty('Shield')
         && (game.equipment.Shield.locked == 0)
-        && (game.equipment.Shield.level < window.RedAcesUI.options.autoBuyEquipment.maxLevel)
+        && (game.equipment.Shield.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable)
     ) {
         window.RedAcesUI.buyEquipment('Shield', 1);
     }
@@ -401,6 +404,18 @@ window.RedAcesUI.autoBuild = function() {
             window.RedAcesUI.build('Warpstation', warpstationLimit - currentWarpstation);
         } else if (game.upgrades.Gigastation.locked == 0) {
             buyUpgrade('Gigastation', true, true);
+        }
+    }
+
+    if (game.buildings.hasOwnProperty('Collector')
+        && (game.buildings.Collector.locked == 0)
+        && game.buildings.hasOwnProperty('Warpstation')
+    ) {
+        var collectorGemCost   = game.buildings.Collector.cost.gems[0] * Math.pow(game.buildings.Collector.cost.gems[0], game.buildings.Collector.level),
+            warpstationGemCost = game.buildings.Warpstation.cost.gems[0] * Math.pow(game.buildings.Warpstation.cost.gems[0], game.buildings.Warpstation.level);
+
+        if (collectorGemCost / warpstationGemCost < RedAcesUI.options.autoBuild.relGemCostForCheapCollector) {
+            window.RedAcesUI.build('Collector', 1);
         }
     }
 };
