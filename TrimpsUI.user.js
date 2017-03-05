@@ -42,7 +42,6 @@ window.RedAcesUI.options = {
     },
     "autoBuyEquipment": {
         "enabled":                      1,
-        "minLevel":                     2,
         "maxLevelPrestigeAvailable":    9,
         "maxLevelPrestigeUnavailable": 40,
         "maxRelEfficiency":           1.5
@@ -222,9 +221,7 @@ window.RedAcesUI.displayEfficiency = function () {
             if (window.RedAcesUI.options.autoBuyEquipment.enabled) {
                 if (game.equipment.hasOwnProperty(itemName)) {
                     equipData = game.equipment[itemName];
-                    if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.minLevel) {
-                        window.RedAcesUI.buyEquipment(itemName, 1);
-                    } else if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
+                    if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
                         if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable) {
                             window.RedAcesUI.buyEquipment(itemName, 1);
                         } else if (itemPrestiges.hasOwnProperty(itemName)
