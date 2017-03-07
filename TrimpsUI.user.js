@@ -179,6 +179,7 @@ window.RedAcesUI.displayEfficiency = function () {
         if (!items.hasOwnProperty(stat)) {
             continue;
         }
+
         items[stat].sort(
             function (a, b) {
                 return a.costPerValue - b.costPerValue;
@@ -222,19 +223,24 @@ window.RedAcesUI.displayEfficiency = function () {
                     + (items[stat][i].costPerValue / bestStatEfficiency * 100).toFixed(0) + '%)</span>';
             }
 
-            if (window.RedAcesUI.options.autoBuyEquipment.enabled) {
-                if (game.equipment.hasOwnProperty(itemName)) {
-                    equipData = game.equipment[itemName];
-                    if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
-                        if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable) {
-                            window.RedAcesUI.buyEquipment(itemName, 1);
-                        } else if (itemPrestiges.hasOwnProperty(itemName)
-                            && (itemPrestiges[itemName].allowed === itemPrestiges[itemName].done)
-                            && (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeUnavailable)
-                        ) {
-                            // there is no prestige available
-                            window.RedAcesUI.buyEquipment(itemName, 1);
-                        }
+            if (window.RedAcesUI.options.autoBuyEquipment.enabled
+                && game.global.hasOwnProperty('autoPrestiges')
+                && ((game.global.autoPrestiges == 1) || ((game.global.autoPrestiges == 2) && (stat == 'Attack')))
+                && game.equipment.hasOwnProperty(itemName)
+            ) {
+                // 1 ... Auto-Prestige "all"
+                // 2 ... Auto-Prestige "Weapons Only" -> Auto Buy Weapons only
+
+                equipData = game.equipment[itemName];
+                if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
+                    if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable) {
+                        window.RedAcesUI.buyEquipment(itemName, 1);
+                    } else if (itemPrestiges.hasOwnProperty(itemName)
+                        && (itemPrestiges[itemName].allowed === itemPrestiges[itemName].done)
+                        && (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeUnavailable)
+                    ) {
+                        // there is no prestige available
+                        window.RedAcesUI.buyEquipment(itemName, 1);
                     }
                 }
             }
@@ -245,6 +251,8 @@ window.RedAcesUI.displayEfficiency = function () {
     if (game.equipment.hasOwnProperty('Shield')
         && (game.equipment.Shield.locked == 0)
         && (game.equipment.Shield.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable)
+        && (game.global.hasOwnProperty('autoPrestiges'))
+        && (game.global.autoPrestiges == 1) // Auto-Prestige "all"
     ) {
         window.RedAcesUI.buyEquipment('Shield', 1);
     }
