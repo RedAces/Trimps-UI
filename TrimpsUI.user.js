@@ -332,17 +332,17 @@ window.RedAcesUI.autoHireTrimps = function() {
                 "Miner":      100,
                 "Lumberjack":  50,
                 "Farmer":      10,
-                "Scientist":    1
+                "Scientist":    0
             },
-            jobRatioSum = 161;
+            jobRatioSum = 160;
     } else {
         var jobRatios   = {
                 "Miner":      100,
                 "Lumberjack":  10,
                 "Farmer":      10,
-                "Scientist":    1
+                "Scientist":    0
             },
-            jobRatioSum = 121;
+            jobRatioSum = 120;
     }
 
     var maxWorkerTrimps = Math.ceil(game.resources.trimps.realMax() / 2);
