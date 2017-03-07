@@ -13,19 +13,19 @@ window.RedAcesUI         = window.RedAcesUI || {};
 window.RedAcesUI.options = {
     "autoBuild": {
         "enabled":           1,
-        "warpstationZero":  20,
+        "warpstationZero":  25,
         "warpstationDelta":  4,
         "buildings":         {
-            "Gym":       -1,
-            "Tribute":   -1,
-            "Nursery":   -1,
-            "Collector": 41,
-            "Gateway":   25,
-            "Resort":    50,
-            "Hotel":     75,
-            "Mansion":  100,
-            "House":    100,
-            "Hut":      100
+            "Gym":         -1,
+            "Tribute":     -1,
+            "Nursery":   1500,
+            "Collector":   41,
+            "Gateway":     25,
+            "Resort":      50,
+            "Hotel":       75,
+            "Mansion":    100,
+            "House":      100,
+            "Hut":        100
         },
         "relGemCostForCheapCollector": 0.1
     },
@@ -45,6 +45,10 @@ window.RedAcesUI.options = {
         "maxLevelPrestigeAvailable":    9,
         "maxLevelPrestigeUnavailable": 40,
         "maxRelEfficiency":           1.5
+    },
+    "autoPause": {
+        "enabled":      0,
+        "worldLevel": 165
     }
 };
 
@@ -465,6 +469,17 @@ window.RedAcesUI.autoGather = function() {
     }
 };
 
+/** Auto pause game at a certain world level */
+window.RedAcesUI.autoPause = function() {
+    if (!window.RedAcesUI.options.autoPause.enabled) {
+        return;
+    }
+
+    if (game.global.world >= RedAcesUI.options.autoPause.worldLevel && (game.options.menu.pauseGame.enabled == 0)) {
+        toggleSetting('pauseGame');
+    }
+};
+
 /** init main loop */
 
 window.RedAcesUI.mainLoop = function() {
@@ -472,6 +487,7 @@ window.RedAcesUI.mainLoop = function() {
     window.RedAcesUI.autoBuild();
     window.RedAcesUI.autoGather();
     window.RedAcesUI.displayEfficiency();
+    window.RedAcesUI.autoPause();
 };
 
 if (window.RedAcesUI.mainTimer) {
