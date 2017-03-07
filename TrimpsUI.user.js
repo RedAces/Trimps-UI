@@ -300,6 +300,11 @@ window.RedAcesUI.autoHireTrimps = function() {
         return;
     }
 
+    if (game.resources.trimps.owned / game.resources.trimps.realMax() < 0.5) {
+        // dont hire anyone if we've got less than half the amount of trimps
+        return;
+    }
+
     var mapObj = getCurrentMapObject();
     if (game.global.world < window.RedAcesUI.options.autoHireTrimps.startWorldZone) {
         return;
@@ -322,7 +327,7 @@ window.RedAcesUI.autoHireTrimps = function() {
                 "Scientist":    1
             },
             jobRatioSum = 211;
-    } else {
+    } else if (game.global.world <= 180) {
         var jobRatios   = {
                 "Miner":      100,
                 "Lumberjack":  50,
@@ -330,6 +335,14 @@ window.RedAcesUI.autoHireTrimps = function() {
                 "Scientist":    1
             },
             jobRatioSum = 161;
+    } else {
+        var jobRatios   = {
+                "Miner":      100,
+                "Lumberjack":  10,
+                "Farmer":      10,
+                "Scientist":    1
+            },
+            jobRatioSum = 121;
     }
 
     var maxWorkerTrimps = Math.ceil(game.resources.trimps.realMax() / 2);
