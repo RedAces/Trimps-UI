@@ -483,7 +483,8 @@ window.RedAcesUI.autoGather = function() {
         setGather('science');
         return;
     }
-    if (game.global.turkimpTimer > 0) {
+
+    if (!game.jobs.hasOwnProperty('Miner') || game.jobs.Miner.locked || (game.global.turkimpTimer > 0)) {
         setGather('metal');
     } else {
         setGather('science');
