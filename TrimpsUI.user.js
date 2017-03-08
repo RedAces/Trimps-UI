@@ -510,6 +510,11 @@ window.RedAcesUI.mainLoop = function() {
     window.RedAcesUI.autoGather();
     window.RedAcesUI.displayEfficiency();
     window.RedAcesUI.autoPause();
+
+    document.title = 'Trimps ' + game.global.version + ' z' + game.global.world + '-' + (game.global.lastClearedCell + 2);
+    if (getAvailableGoldenUpgrades() > 0) {
+        document.title = 'GOLDEN ' + document.title;
+    }
 };
 
 if (window.RedAcesUI.mainTimer) {
