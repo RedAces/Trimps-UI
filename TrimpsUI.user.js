@@ -1,8 +1,9 @@
 // ==UserScript==//
 // @name           RedAces Trimps-UI
 // @namespace      https://github.com/RedAces/Trimps-UI
-// @description    Adds some UI elements to Trimps
+// @description    Some Trimp automation
 // @grant          none
+// @downloadUrl    https://github.com/RedAces/Trimps-UI/raw/master/TrimpsUI.user.js
 // @include        http://trimps.github.io
 // @include        https://trimps.github.io
 // @include        http://trimps.github.io/*
