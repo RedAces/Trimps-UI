@@ -14,12 +14,11 @@ window.RedAcesUI         = window.RedAcesUI || {};
 window.RedAcesUI.options = {
     "autoBuild": {
         "enabled":           1,
-        "warpstationZero":  25,
+        "warpstationZero":  30,
         "warpstationDelta":  4,
-        "buildings":         {
+        "buildings": {
             "Gym":         -1,
             "Tribute":     -1,
-            "Nursery":   1500,
             "Collector":   41,
             "Gateway":     25,
             "Resort":      50,
@@ -28,7 +27,18 @@ window.RedAcesUI.options = {
             "House":      100,
             "Hut":        100
         },
-        "relGemCostForCheapCollector": 0.1
+        "cheapBuildings": {
+            "Collector": {
+                "otherBuilding": "Warpstation",
+                "resource":             "gems",
+                "relation":                0.1
+            },
+            "Nursery": {
+                "otherBuilding":         "Gym",
+                "resource":             "wood",
+                "relation":                0.1
+            }
+        }
     },
     "autoHireTrimps": {
         "enabled":         1,
@@ -42,14 +52,14 @@ window.RedAcesUI.options = {
         "enabled": 1
     },
     "autoBuyEquipment": {
-        "enabled":                      1,
-        "maxLevelPrestigeAvailable":    9,
-        "maxLevelPrestigeUnavailable": 40,
-        "maxRelEfficiency":           1.5
+        "enabled":                       1,
+        "maxLevelPrestigeAvailable":     9,
+        "maxLevelPrestigeUnavailable":  40,
+        "maxRelEfficiency":            1.5
     },
     "autoPause": {
         "enabled":      0,
-        "worldLevel": 165
+        "worldLevel": 179
     }
 };
 
@@ -430,15 +440,36 @@ window.RedAcesUI.autoBuild = function() {
         }
     }
 
-    if (game.buildings.hasOwnProperty('Collector')
-        && (game.buildings.Collector.locked == 0)
-        && game.buildings.hasOwnProperty('Warpstation')
-    ) {
-        var collectorGemCost   = game.buildings.Collector.cost.gems[0] * Math.pow(game.buildings.Collector.cost.gems[1], game.buildings.Collector.purchased),
-            warpstationGemCost = game.buildings.Warpstation.cost.gems[0] * Math.pow(game.buildings.Warpstation.cost.gems[1], game.buildings.Warpstation.purchased);
+    for (var buildingName in window.RedAcesUI.options.autoBuild.cheapBuildings) {
+        if (!window.RedAcesUI.options.autoBuild.cheapBuildings.hasOwnProperty(buildingName)
+            || !game.buildings.hasOwnProperty(buildingName)
+            || game.buildings[buildingName].locked
+        ) {
+            continue;
+        }
+        var cheapBuildingData = window.RedAcesUI.options.autoBuild.cheapBuildings[buildingName];
 
-        if (collectorGemCost / warpstationGemCost < RedAcesUI.options.autoBuild.relGemCostForCheapCollector) {
-            window.RedAcesUI.build('Collector', 1);
+        if (!game.buildings.hasOwnProperty(cheapBuildingData.otherBuilding)
+            || game.buildings[cheapBuildingData.otherBuilding].locked
+            || !game.buildings[cheapBuildingData.otherBuilding].cost.hasOwnProperty(cheapBuildingData.resource)
+
+            || !game.buildings[buildingName].cost.hasOwnProperty(cheapBuildingData.resource)
+        ) {
+            continue;
+        }
+
+        var thisCostArray  = game.buildings[buildingName].cost[cheapBuildingData.resource],
+            otherCostArray = game.buildings[cheapBuildingData.otherBuilding].cost[cheapBuildingData.resource],
+            buildingCost   = thisCostArray[0]  * Math.pow(thisCostArray[1],  game.buildings[buildingName].purchased),
+            otherCost      = otherCostArray[0] * Math.pow(otherCostArray[1], game.buildings[cheapBuildingData.otherBuilding].purchased);
+
+        if (buildingCost / otherCost <= cheapBuildingData.relation) {
+            // console.debug(
+            //     'Buying 1 ' + buildingName + ' because the relation of ' + cheapBuildingData.resource + ' to '
+            //     + cheapBuildingData.otherBuilding + ' is ' + buildingCost / otherCost
+            //     + ', which is less than ' + cheapBuildingData.relation
+            // );
+            window.RedAcesUI.build(buildingName, 1);
         }
     }
 };
@@ -512,15 +543,11 @@ window.RedAcesUI.mainLoop = function() {
     window.RedAcesUI.displayEfficiency();
     window.RedAcesUI.autoPause();
 
-    document.title = 'Trimps ' + game.global.version + ' z' + game.global.world + '-' + (game.global.lastClearedCell + 2);
+    document.title = 'Trimps z' + game.global.world + '-' + (game.global.lastClearedCell + 2);
     if (getAvailableGoldenUpgrades() > 0) {
         document.title = 'GOLDEN ' + document.title;
     }
 };
-
-if (window.RedAcesUI.mainTimer) {
-    clearInterval(window.RedAcesUI.mainTimer);
-}
 
 window.RedAcesUI.mainTimer = setInterval(
     window.RedAcesUI.mainLoop,
