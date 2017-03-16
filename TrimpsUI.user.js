@@ -53,7 +53,7 @@ window.RedAcesUI.options = {
     },
     "autoBuyEquipment": {
         "enabled":                       1,
-        "maxLevelPrestigeAvailable":     9,
+        "maxLevelPrestigeAvailable":     5,
         "maxLevelPrestigeUnavailable":  40,
         "maxRelEfficiency":            1.5
     },
@@ -236,7 +236,8 @@ window.RedAcesUI.displayEfficiency = function () {
 
             if (window.RedAcesUI.options.autoBuyEquipment.enabled
                 && game.global.hasOwnProperty('autoPrestiges')
-                && ((game.global.autoPrestiges == 1) || ((game.global.autoPrestiges == 2) && (stat == 'Attack')))
+                && ((game.global.autoPrestiges == 1)
+                    || (((game.global.autoPrestiges == 2) || (game.global.autoPrestiges == 3)) && (stat == 'Attack')))
                 && game.equipment.hasOwnProperty(itemName)
             ) {
                 // 1 ... Auto-Prestige "all"
@@ -338,7 +339,7 @@ window.RedAcesUI.autoHireTrimps = function() {
                 "Scientist":    1
             },
             jobRatioSum = 211;
-    } else if (game.global.world <= 180) {
+    } else {
         var jobRatios   = {
                 "Miner":      100,
                 "Lumberjack":  50,
@@ -346,14 +347,6 @@ window.RedAcesUI.autoHireTrimps = function() {
                 "Scientist":    0
             },
             jobRatioSum = 160;
-    } else {
-        var jobRatios   = {
-                "Miner":      100,
-                "Lumberjack":  10,
-                "Farmer":      10,
-                "Scientist":    0
-            },
-            jobRatioSum = 120;
     }
 
     var maxWorkerTrimps = Math.ceil(game.resources.trimps.realMax() / 2);
@@ -401,7 +394,6 @@ window.RedAcesUI.build = function(buildingName, amount) {
     game.global.buyAmt   = amount;
     buyBuilding(buildingName, false, true);
     game.global.buyAmt   = currentBuyAmount;
-    setGather('buildings');
 };
 
 /** Auto building Buildings */
