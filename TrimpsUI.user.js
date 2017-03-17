@@ -242,6 +242,7 @@ window.RedAcesUI.displayEfficiency = function () {
             ) {
                 // 1 ... Auto-Prestige "all"
                 // 2 ... Auto-Prestige "Weapons Only" -> Auto Buy Weapons only
+                // 3 ... Auto-Prestige "Weapons First" -> Auto Buy Weapons only
 
                 equipData = game.equipment[itemName];
                 if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
