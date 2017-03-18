@@ -14,8 +14,8 @@ window.RedAcesUI         = window.RedAcesUI || {};
 window.RedAcesUI.options = {
     "autoBuild": {
         "enabled":           1,
-        "warpstationZero":  35,
-        "warpstationDelta":  4,
+        "warpstationZero":  20,
+        "warpstationDelta":  5,
         "buildings": {
             "Gym":         -1,
             "Tribute":     -1,
