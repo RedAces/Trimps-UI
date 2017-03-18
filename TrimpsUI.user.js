@@ -350,6 +350,11 @@ window.RedAcesUI.autoHireTrimps = function() {
             jobRatioSum = 160;
     }
 
+    if (!game.jobs.hasOwnProperty('Miner') || game.jobs.Miner.locked) {
+        jobRatioSum    -= jobRatios.Miner;
+        jobRatios.Miner = 0;
+    }
+
     var maxWorkerTrimps = Math.ceil(game.resources.trimps.realMax() / 2);
 
     if (game.jobs.hasOwnProperty('Trainer')) {
