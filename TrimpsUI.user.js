@@ -551,3 +551,56 @@ window.RedAcesUI.mainTimer = setInterval(
     window.RedAcesUI.mainLoop,
     1000
 );
+
+/** options */
+
+window.RedAcesUI.toggleAutomation = function (what) {
+    window.RedAcesUI.options[what].enabled = !window.RedAcesUI.options[what].enabled;
+    var button = document.getElementById('RedAcesUIOpt' + what);
+    if (window.RedAcesUI.options[what].enabled) {
+        button.className = 'pointer noselect colorSuccess';
+    } else {
+        button.className = 'pointer noselect colorDanger';
+    }
+};
+
+/** Show options buttons */
+window.RedAcesUI.displayOptions = function() {
+    var displayButton = function (what, label, where, fullSize) {
+        var button          = document.createElement('div');
+        button.className    = 'pointer noselect colorSuccess';
+        button.innerHTML    = label;
+        button.id           = 'RedAcesUIOpt' + what;
+        button.onclick      = function () {
+            window.RedAcesUI.toggleAutomation(what);
+        };
+
+        button.style.border   = '1px solid white';
+        button.style.padding  = '0 5px';
+        button.style.fontSize = '0.9vw';
+
+        if (fullSize) {
+            where.innerHTML = '';
+        } else {
+            button.style.display = 'inline';
+        }
+        where.appendChild(button);
+    };
+
+    var jobsTitleSpan = document.getElementById('jobsTitleSpan');
+    if (jobsTitleSpan) {
+        displayButton('autoHireTrimps', 'AutoHire', jobsTitleSpan.parentNode, false);
+    }
+
+    var equipmentTitleDiv = document.getElementById('equipmentTitleDiv');
+    if (equipmentTitleDiv) {
+        displayButton('autoBuyEquipment', 'AutoBuyEquip', equipmentTitleDiv.childNodes[1].childNodes[3], true);
+    }
+
+    var buildingsTitleDiv = document.getElementById('buildingsTitleDiv');
+    if (buildingsTitleDiv) {
+        displayButton('autoBuild', 'AutoBuild', buildingsTitleDiv.childNodes[1].childNodes[3], true);
+    }
+};
+
+window.RedAcesUI.displayOptions();
