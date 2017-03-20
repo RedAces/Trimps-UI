@@ -652,6 +652,11 @@ window.RedAcesUI.autoRunCorruptedChallenge = function() {
     // We're not done yet!
     window.RedAcesUI.options.autoRunCorruptedChallenge = {"done": 0};
 
+    if (game.global.pauseFight) {
+        // Set 'AutoFight On'
+        pauseFight();
+    }
+
     if (getAvailableGoldenUpgrades() > 0) {
         buyGoldenUpgrade('Helium');
     }
