@@ -642,6 +642,7 @@ window.RedAcesUI.runVoidMaps = function() {
 
 window.RedAcesUI.autoRunCorruptedChallenge = function() {
     if ((game.global.world > 200)
+        || (game.global.world < 10)
         || ((game.global.world == 200) && window.RedAcesUI.options.autoRunCorruptedChallenge.done)
     ) {
         // nothing to do here anymore!
@@ -650,6 +651,10 @@ window.RedAcesUI.autoRunCorruptedChallenge = function() {
 
     // We're not done yet!
     window.RedAcesUI.options.autoRunCorruptedChallenge = {"done": 0};
+
+    if (getAvailableGoldenUpgrades() > 0) {
+        buyGoldenUpgrade('Helium');
+    }
 
     // Auto-Stance
     var mapObj          = getCurrentMapObject(),
@@ -660,7 +665,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function() {
     } else {
         targetFormation = 4; // Scryer
     }
-    if ((game.global.formation != targetFormation) && (game.global.world >= 60)) {
+    if ((game.upgrades.Formations.allowed) && (game.global.formation != targetFormation) && (game.global.world >= 60)) {
         console.log('RA:autoRunCorruptedChallenge(): setting formation');
         setFormation(targetFormation)
     }
@@ -680,8 +685,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function() {
     }
 
     if (game.global.world < 180) {
-        if ((game.global.world != 5)
-            && (game.global.world % 5 == 0)
+        if ((game.global.world % 5 == 0)
             && (game.global.world % 10 != 0)
             && (addSpecials(true, true, null, true).length > 0)
         ) {
@@ -694,6 +698,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function() {
 
     if ((game.global.mapBonus < 10)
         && (game.global.world % 2 == 0)
+        && (game.global.world < 200)
     ) {
         console.log('RA:autoRunCorruptedChallenge(): running maps for stacking damage boost');
         window.RedAcesUI.runNewMap(1); // Repeat to 10
