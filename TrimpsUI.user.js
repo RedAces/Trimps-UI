@@ -532,19 +532,207 @@ window.RedAcesUI.autoPause = function() {
     }
 };
 
+/** Runs a newly bought map */
+window.RedAcesUI.runNewMap = function(repeatUntil) {
+    if (game.global.currentMapId != '') {
+        // We're already running a map!
+        return 'already running a map';
+    }
+
+    if (!game.global.switchToMaps && !game.global.preMapsActive) {
+        // switch to maps screen and wait for it
+        mapsClicked();
+
+        if (game.global.switchToMaps && !game.global.preMapsActive) {
+            // skip "waiting for trimps to die"
+            mapsClicked();
+        }
+    }
+
+    if (!game.global.preMapsActive) {
+        // Not in the maps screen now ... something has gone wrong!
+        return 'not in maps screen';
+    }
+
+    document.getElementById('biomeAdvMapsSelect').value = 'Plentiful';
+    adjustMap('loot', 9);
+    adjustMap('size', 9);
+    adjustMap('difficulty', 9);
+    updateMapCost();
+
+    if (!game.global.repeatMap) {
+        repeatClicked();
+    }
+
+    while (game.options.menu.repeatUntil.enabled != repeatUntil) {
+        // 0 ... "Repeat forever"
+        // 1 ... "Repeat to 10"
+        // 2 ... "Repeat for items"
+        toggleSetting('repeatUntil')
+    }
+
+    while (game.options.menu.exitTo.enabled != 1) {
+        // 1 ... "Exit to World"
+        toggleSetting('exitTo')
+    }
+
+    if (buyMap() < 0) {
+        return 'buying a map failed';
+    }
+
+    // new map is selected -> run it
+    runMap();
+};
+
+/** Runs all void maps */
+window.RedAcesUI.runVoidMaps = function() {
+    if (game.global.currentMapId != '') {
+        // We're already running a map!
+        return 'already running a map';
+    }
+
+    if (game.global.totalVoidMaps == 0) {
+        // There are no void maps
+        return 'no void maps';
+    }
+
+    if (!game.global.switchToMaps && !game.global.preMapsActive) {
+        // switch to maps screen and wait for it
+        mapsClicked();
+
+        if (game.global.switchToMaps && !game.global.preMapsActive) {
+            // skip "waiting for trimps to die"
+            mapsClicked();
+        }
+    }
+
+    if (!game.global.preMapsActive) {
+        // Not in the maps screen now ... something has gone wrong!
+        return 'not in maps screen';
+    }
+
+    toggleVoidMaps();
+
+    while (game.options.menu.repeatVoids.enabled != 1) {
+        // 0 ... "One Void Map"
+        // 1 ... "All Void Maps"
+        toggleSetting('repeatVoids');
+    }
+
+    while (game.options.menu.exitTo.enabled != 1) {
+        // 1 ... "Exit to World"
+        toggleSetting('exitTo')
+    }
+
+    for (var i in game.global.mapsOwnedArray) {
+        if (!game.global.mapsOwnedArray.hasOwnProperty(i)) {
+            continue;
+        }
+        var map = game.global.mapsOwnedArray[i];
+        if (map.location == 'Void') {
+            // Found one! Run it and all is good!
+            selectMap(map.id);
+            runMap();
+            return;
+        }
+    }
+};
+
+/** Auto runs the "Corrupted" Challenge */
+
+window.RedAcesUI.autoRunCorruptedChallenge = function() {
+    if ((game.global.world > 200)
+        || ((game.global.world == 200) && window.RedAcesUI.options.autoRunCorruptedChallenge.done)
+    ) {
+        // nothing to do here anymore!
+        return;
+    }
+
+    // We're not done yet!
+    window.RedAcesUI.options.autoRunCorruptedChallenge = {"done": 0};
+
+    // Auto-Stance
+    var mapObj          = getCurrentMapObject(),
+        targetFormation;
+
+    if (((mapObj !== undefined) && (mapObj.location == "Void"))) {
+        targetFormation = 2; // Dominance
+    } else {
+        targetFormation = 4; // Scryer
+    }
+    if ((game.global.formation != targetFormation) && (game.global.world >= 60)) {
+        console.log('RA:autoRunCorruptedChallenge(): setting formation');
+        setFormation(targetFormation)
+    }
+
+    // toggle GA until is between 6 and 20
+    if (game.jobs.Geneticist.locked != 0) {
+        while ((game.global.GeneticistassistSetting < 6) || (game.global.GeneticistassistSetting > 20)) {
+            console.log('RA:autoRunCorruptedChallenge(): toggling GA');
+            toggleGeneticistassist();
+        }
+    }
+
+    // Auto run Maps
+    if (game.global.currentMapId != '') {
+        // We're already running a map!
+        return;
+    }
+
+    if (game.global.world < 180) {
+        if ((game.global.world != 5)
+            && (game.global.world % 5 == 0)
+            && (game.global.world % 10 != 0)
+            && (addSpecials(true, true, null, true).length > 0)
+        ) {
+            // addSpecials(..) will return a max of 13 (all prestiges one time)
+            console.log('RA:autoRunCorruptedChallenge(): running maps for prestiges');
+            window.RedAcesUI.runNewMap(2); // Repeat for items
+        }
+        return;
+    }
+
+    if ((game.global.mapBonus < 10)
+        && (game.global.world % 2 == 0)
+    ) {
+        console.log('RA:autoRunCorruptedChallenge(): running maps for stacking damage boost');
+        window.RedAcesUI.runNewMap(1); // Repeat to 10
+        return;
+    }
+
+    if ((game.global.world == 190)
+        && (game.global.mapBonus >= 10)
+        && (game.global.totalVoidMaps > 0)
+    ) {
+        // We're ready for the voids! TODO Set GA to 30 secs?
+        console.log('RA:autoRunCorruptedChallenge(): running void maps');
+        window.RedAcesUI.runVoidMaps();
+        return;
+    }
+
+    if (game.global.world == 200) {
+        // We're done! Let it farm and the user may choose what to do next
+        console.log('RA:autoRunCorruptedChallenge(): running level 200 map to farm forever');
+        window.RedAcesUI.runNewMap(0); // Repeat forever
+        window.RedAcesUI.options.autoRunCorruptedChallenge.done = 1;
+        return;
+    }
+};
+
 /** init main loop */
 
 window.RedAcesUI.mainLoop = function() {
+    document.title = 'Trimps z' + game.global.world + '-' + (game.global.lastClearedCell + 2);
+    if (getAvailableGoldenUpgrades() > 0) {
+        document.title = 'GOLDEN ' + document.title;
+    }
+
     window.RedAcesUI.autoHireTrimps();
     window.RedAcesUI.autoBuild();
     window.RedAcesUI.autoGather();
     window.RedAcesUI.displayEfficiency();
     window.RedAcesUI.autoPause();
-
-    document.title = 'Trimps z' + game.global.world + '-' + (game.global.lastClearedCell + 2);
-    if (getAvailableGoldenUpgrades() > 0) {
-        document.title = 'GOLDEN ' + document.title;
-    }
+    window.RedAcesUI.autoRunCorruptedChallenge();
 };
 
 window.RedAcesUI.mainTimer = setInterval(
