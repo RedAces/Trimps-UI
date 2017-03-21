@@ -693,7 +693,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
     }
 
     if ((game.upgrades.Formations.allowed) && (game.global.formation != targetFormation) && (game.global.world >= 60)) {
-        console.log('RA:autoRunCorruptedChallenge(): setting formation');
+        message('RA:autoRunCorruptedChallenge(): setting formation', "Notices");
         setFormation(targetFormation)
     }
 
@@ -701,7 +701,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
         game.global.GeneticistassistSteps.pop();
         game.global.GeneticistassistSteps.push(30);
         while (game.global.GeneticistassistSetting != 30) {
-            console.log('RA:autoRunCorruptedChallenge(): toggling GA');
+            message('RA:autoRunCorruptedChallenge(): toggling GA', "Notices");
             toggleGeneticistassist();
         }
     }
@@ -718,7 +718,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
             && (addSpecials(true, true, null, true).length > 0)
         ) {
             // addSpecials(..) will return a max of 13 (all prestiges one time)
-            console.log('RA:autoRunCorruptedChallenge(): running maps for prestiges');
+            message('RA:autoRunCorruptedChallenge(): running maps for prestiges', 'Notices');
             window.RedAcesUI.runNewMap(2); // Repeat for items
         }
         return;
@@ -728,7 +728,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
         && (game.global.world % 2 == 0)
         && (game.global.world < endZone)
     ) {
-        console.log('RA:autoRunCorruptedChallenge(): running maps for stacking damage boost');
+        message('RA:autoRunCorruptedChallenge(): running maps for stacking damage boost', 'Notices');
         window.RedAcesUI.runNewMap(1); // Repeat to 10
         return;
     }
@@ -738,14 +738,14 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
         && (game.global.totalVoidMaps > 0)
     ) {
         // We're ready for the voids!
-        console.log('RA:autoRunCorruptedChallenge(): running void maps');
+        message('RA:autoRunCorruptedChallenge(): running void maps', 'Notices');
         window.RedAcesUI.runVoidMaps();
         return;
     }
 
     if (game.global.world == endZone) {
         // We're done! Let it farm and the user may choose what to do next
-        console.log('RA:autoRunCorruptedChallenge(): running level ' + endZone + ' map to farm forever');
+        message('RA:autoRunCorruptedChallenge(): running level ' + endZone + ' map to farm forever', 'Notices');
         window.RedAcesUI.runNewMap(0); // Repeat forever
         window.RedAcesUI.options.autoRunCorruptedChallenge.done = 1;
         return;
@@ -774,11 +774,12 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
         warpstationDelta         = Math.floor(rawWarpstationDelta / 0.5) * 0.5,
         warpstationZero          = Math.ceil(targetWarpstationCount - warpstationDelta * gigastationAllowed);
 
-    console.log(
+    message(
         'With 2 mins of farming ' + metalPerSecond + ' metal per second you could afford a level '
         + targetWarpstationCount.toFixed(2) + ' warpstation (at ' + gigastationAllowed + ' gigastations)'
         + ' so use 0+' + rawWarpstationDelta.toFixed(2) + ' or ' + warpstationZero + '+' + warpstationDelta
-        + ' strategy'
+        + ' strategy',
+        'Notices'
     );
 
     if ((window.RedAcesUI.options.autoBuild.warpstationDelta == warpstationDelta)
@@ -786,17 +787,19 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
     ) {
         window.RedAcesUI.options.autoBuild.warpstationZero = warpstationZero;
 
-        console.log(
+        message(
             'Updating warpstationZero, new Warpstation Strategy is '
-            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta
+            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta,
+            'Notices'
         );
     } else if (window.RedAcesUI.options.autoBuild.warpstationDelta <= warpstationDelta) {
         window.RedAcesUI.options.autoBuild.warpstationDelta = warpstationDelta;
         window.RedAcesUI.options.autoBuild.warpstationZero  = warpstationZero;
 
-        console.log(
+        message(
             'Updating warpstation strategy, new Warpstation Strategy is '
-            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta
+            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta,
+            'Notices'
         );
     }
     return warpstationZero + '+' + warpstationDelta;
