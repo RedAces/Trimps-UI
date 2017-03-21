@@ -14,8 +14,8 @@ window.RedAcesUI         = window.RedAcesUI || {};
 window.RedAcesUI.options = {
     "autoBuild": {
         "enabled":            1,
-        "warpstationZero":   30,
-        "warpstationDelta": 4.5,
+        "warpstationZero":    5,
+        "warpstationDelta": 5.5,
         "buildings": {
             "Gym":         -1,
             "Tribute":     -1,
@@ -100,12 +100,28 @@ window.RedAcesUI.buyEquipment = function(equipmentName, amount) {
     game.global.buyAmt   = currentBuyAmount;
 };
 
+/** calculates the Artisanistry multiplicator for all thingies */
+window.RedAcesUI.getArtisanistryMult = function() {
+    return Math.pow(1 - game.portal.Artisanistry.modifier, game.portal.Artisanistry.level);
+};
+
+/** calculates the Resourceful multiplicator for all structures */
+window.RedAcesUI.getResourcefulMult = function() {
+    return Math.pow(1 - game.portal.Resourceful.modifier, game.portal.Resourceful.level);
+};
+
+/** calculates the cost for all thingies (without cost mult!) */
+window.RedAcesUI.calcCost = function(cost, level) {
+    // e. g. window.RedAcesUI.calcCost(game.buildings.Warpstation.cost.metal, 100)
+    return cost[0] * Math.pow(cost[1], level);
+};
+
 /** Equipment efficiency */
 window.RedAcesUI.displayEfficiency = function () {
     if (!window.RedAcesUI.options.displayEfficiency.enabled && !window.RedAcesUI.options.autoBuyEquipment.enabled) {
         return;
     }
-    var costMult = Math.pow(1 - game.portal.Artisanistry.modifier, game.portal.Artisanistry.level),
+    var costMult = window.RedAcesUI.getArtisanistryMult(),
         items    = {"Health": [], "Attack": []},
         itemName,
         stat,
@@ -138,7 +154,7 @@ window.RedAcesUI.displayEfficiency = function () {
         }
 
         var resource     = Object.keys(data.cost)[0],
-            cost         = data.cost[resource][0] * Math.pow(data.cost[resource][1], data.level) * costMult,
+            cost         = window.RedAcesUI.calcCost(data.cost[resource], data.level) * costMult,
             costPerValue = cost / gain;
 
         if ((resource != 'metal') || (gain == 0)) {
@@ -445,21 +461,26 @@ window.RedAcesUI.autoBuild = function() {
         ) {
             continue;
         }
-        var cheapBuildingData = window.RedAcesUI.options.autoBuild.cheapBuildings[buildingName];
+        var cheapBuildingData = window.RedAcesUI.options.autoBuild.cheapBuildings[buildingName],
+            otherBuildingName = cheapBuildingData.otherBuilding;
 
-        if (!game.buildings.hasOwnProperty(cheapBuildingData.otherBuilding)
-            || game.buildings[cheapBuildingData.otherBuilding].locked
-            || !game.buildings[cheapBuildingData.otherBuilding].cost.hasOwnProperty(cheapBuildingData.resource)
+        if (!game.buildings.hasOwnProperty(otherBuildingName)
+            || game.buildings[otherBuildingName].locked
+            || !game.buildings[otherBuildingName].cost.hasOwnProperty(cheapBuildingData.resource)
 
             || !game.buildings[buildingName].cost.hasOwnProperty(cheapBuildingData.resource)
         ) {
             continue;
         }
 
-        var thisCostArray  = game.buildings[buildingName].cost[cheapBuildingData.resource],
-            otherCostArray = game.buildings[cheapBuildingData.otherBuilding].cost[cheapBuildingData.resource],
-            buildingCost   = thisCostArray[0]  * Math.pow(thisCostArray[1],  game.buildings[buildingName].purchased),
-            otherCost      = otherCostArray[0] * Math.pow(otherCostArray[1], game.buildings[cheapBuildingData.otherBuilding].purchased);
+        var buildingCost = window.RedAcesUI.calcCost(
+                game.buildings[buildingName].cost[cheapBuildingData.resource],
+                game.buildings[buildingName].purchased
+            ),
+            otherCost    = window.RedAcesUI.calcCost(
+                game.buildings[otherBuildingName].cost[cheapBuildingData.resource],
+                game.buildings[otherBuildingName].purchased
+            );
 
         if (buildingCost / otherCost <= cheapBuildingData.relation) {
             // console.debug(
@@ -663,13 +684,14 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
 
     // Auto-Stance
     var mapObj          = getCurrentMapObject(),
-        targetFormation;
-
-    if (((mapObj !== undefined) && (mapObj.location == "Void"))) {
-        targetFormation = 2; // Dominance
-    } else {
         targetFormation = 4; // Scryer
+
+    if (((mapObj !== undefined) && (mapObj.location == "Void"))
+        || ((mapObj === undefined) && (game.global.world === 200) && (game.global.spireActive))
+    ) {
+        targetFormation = 2; // Dominance
     }
+
     if ((game.upgrades.Formations.allowed) && (game.global.formation != targetFormation) && (game.global.world >= 60)) {
         console.log('RA:autoRunCorruptedChallenge(): setting formation');
         setFormation(targetFormation)
@@ -730,6 +752,56 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
     }
 };
 
+window.RedAcesUI.calcWarpstationStrategy = function() {
+    if (!game.buildings.hasOwnProperty('Warpstation')
+        || !game.upgrades.hasOwnProperty('Gigastation')
+    ) {
+        return 'warp- or gigastation not available';
+    }
+    var metalPerSecondPretty = document.getElementById('metalPs').innerHTML,
+        metalPerSecond       = 1 * metalPerSecondPretty.substring(1, metalPerSecondPretty.length - 4),
+        metalPerMinute       = metalPerSecond * 60,
+
+        gigastationCurrent   = game.upgrades.Gigastation.done,
+        gigastationAllowed   = game.upgrades.Gigastation.allowed,
+
+        // cost for 1 warpstation at max gigastation
+        warpstationBaseMetalCost = game.buildings.Warpstation.cost.metal[0] * Math.pow(1.75, gigastationAllowed - gigastationCurrent) * window.RedAcesUI.getArtisanistryMult() * window.RedAcesUI.getResourcefulMult(),
+
+        // Amount of warpstation for 5 minutes worth of metal farming
+        targetWarpstationCount   = Math.log(2 * metalPerMinute / warpstationBaseMetalCost) / Math.log(game.buildings.Warpstation.cost.metal[1]),
+        rawWarpstationDelta      = targetWarpstationCount / gigastationAllowed,
+        warpstationDelta         = Math.floor(rawWarpstationDelta / 0.5) * 0.5,
+        warpstationZero          = Math.ceil(targetWarpstationCount - warpstationDelta * gigastationAllowed);
+
+    console.log(
+        'With 2 mins of farming ' + metalPerSecond + ' metal per second you could afford a level '
+        + targetWarpstationCount.toFixed(2) + ' warpstation (at ' + gigastationAllowed + ' gigastations)'
+        + ' so use 0+' + rawWarpstationDelta.toFixed(2) + ' or ' + warpstationZero + '+' + warpstationDelta
+        + ' strategy'
+    );
+
+    if ((window.RedAcesUI.options.autoBuild.warpstationDelta == warpstationDelta)
+        && (window.RedAcesUI.options.autoBuild.warpstationZero < warpstationZero)
+    ) {
+        window.RedAcesUI.options.autoBuild.warpstationZero = warpstationZero;
+
+        console.log(
+            'Updating warpstationZero, new Warpstation Strategy is '
+            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta
+        );
+    } else if (window.RedAcesUI.options.autoBuild.warpstationDelta <= warpstationDelta) {
+        window.RedAcesUI.options.autoBuild.warpstationDelta = warpstationDelta;
+        window.RedAcesUI.options.autoBuild.warpstationZero  = warpstationZero;
+
+        console.log(
+            'Updating warpstation strategy, new Warpstation Strategy is '
+            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta
+        );
+    }
+    return warpstationZero + '+' + warpstationDelta;
+};
+
 /** init main loop */
 
 window.RedAcesUI.mainLoop = function() {
@@ -744,6 +816,8 @@ window.RedAcesUI.mainLoop = function() {
     window.RedAcesUI.displayEfficiency();
     window.RedAcesUI.autoPause();
     window.RedAcesUI.autoRunCorruptedChallenge(180, 190, 210);
+
+    document.getElementById('metalPs').innerHTML.substring(1, document.getElementById('metalPs').innerHTML.length - 4)
 };
 
 window.RedAcesUI.mainTimer = setInterval(
