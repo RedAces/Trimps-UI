@@ -640,10 +640,10 @@ window.RedAcesUI.runVoidMaps = function() {
 
 /** Auto runs the "Corrupted" Challenge */
 
-window.RedAcesUI.autoRunCorruptedChallenge = function() {
-    if ((game.global.world > 200)
+window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZone, endZone) {
+    if ((game.global.world > endZone)
         || (game.global.world < 10)
-        || ((game.global.world == 200) && window.RedAcesUI.options.autoRunCorruptedChallenge.done)
+        || ((game.global.world == endZone) && window.RedAcesUI.options.autoRunCorruptedChallenge.done)
     ) {
         // nothing to do here anymore!
         return;
@@ -690,7 +690,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function() {
         return;
     }
 
-    if (game.global.world < 180) {
+    if (game.global.world < climbUntilZone) {
         if ((game.global.world % 5 == 0)
             && (game.global.world % 10 != 0)
             && (addSpecials(true, true, null, true).length > 0)
@@ -704,26 +704,26 @@ window.RedAcesUI.autoRunCorruptedChallenge = function() {
 
     if ((game.global.mapBonus < 10)
         && (game.global.world % 2 == 0)
-        && (game.global.world < 200)
+        && (game.global.world < endZone)
     ) {
         console.log('RA:autoRunCorruptedChallenge(): running maps for stacking damage boost');
         window.RedAcesUI.runNewMap(1); // Repeat to 10
         return;
     }
 
-    if ((game.global.world == 190)
+    if ((game.global.world == voidMapZone)
         && (game.global.mapBonus >= 10)
         && (game.global.totalVoidMaps > 0)
     ) {
-        // We're ready for the voids! TODO Set GA to 30 secs?
+        // We're ready for the voids!
         console.log('RA:autoRunCorruptedChallenge(): running void maps');
         window.RedAcesUI.runVoidMaps();
         return;
     }
 
-    if (game.global.world == 200) {
+    if (game.global.world == endZone) {
         // We're done! Let it farm and the user may choose what to do next
-        console.log('RA:autoRunCorruptedChallenge(): running level 200 map to farm forever');
+        console.log('RA:autoRunCorruptedChallenge(): running level ' + endZone + ' map to farm forever');
         window.RedAcesUI.runNewMap(0); // Repeat forever
         window.RedAcesUI.options.autoRunCorruptedChallenge.done = 1;
         return;
@@ -743,7 +743,7 @@ window.RedAcesUI.mainLoop = function() {
     window.RedAcesUI.autoGather();
     window.RedAcesUI.displayEfficiency();
     window.RedAcesUI.autoPause();
-    window.RedAcesUI.autoRunCorruptedChallenge();
+    window.RedAcesUI.autoRunCorruptedChallenge(180, 190, 210);
 };
 
 window.RedAcesUI.mainTimer = setInterval(
