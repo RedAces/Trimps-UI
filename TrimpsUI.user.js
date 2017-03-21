@@ -675,9 +675,10 @@ window.RedAcesUI.autoRunCorruptedChallenge = function() {
         setFormation(targetFormation)
     }
 
-    // toggle Geneticistassist until it is >= 6 seconds
-    if (!game.jobs.Geneticist.locked) {
-        while (game.global.GeneticistassistSetting < 6) {
+    if (!game.jobs.Geneticist.locked && (game.global.GeneticistassistSetting != 30)) {
+        game.global.GeneticistassistSteps.pop();
+        game.global.GeneticistassistSteps.push(30);
+        while (game.global.GeneticistassistSetting != 30) {
             console.log('RA:autoRunCorruptedChallenge(): toggling GA');
             toggleGeneticistassist();
         }
