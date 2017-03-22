@@ -737,15 +737,12 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, prest
         repeatClicked();
     }
 
-    if (game.global.currentMapId != '') {
+    if (mapObj !== undefined) {
         // We're already running a map!
         return;
     }
 
-    if ((mapObj === undefined)
-        && (game.global.world === 200)
-        && (game.global.spireActive)
-    ) {
+    if (game.global.spireActive) {
         if (addSpecials(true, true, null, true).length > 0) {
             // We're in the spire and have prestiges left to farm!!
             message(fn + ': running z' + game.global.world + ' maps for all prestiges (bc of spire!)', 'Notices');
@@ -768,6 +765,13 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, prest
         && (game.global.mapBonus >= 10)
         && (game.global.totalVoidMaps > 0)
     ) {
+        if (addSpecials(true, true, null, true).length > 0) {
+            // We're in the spire and have prestiges left to farm!!
+            message(fn + ': running z' + game.global.world + ' maps for all prestiges (bc of void maps!)', 'Notices');
+            window.RedAcesUI.runNewMap(2); // Repeat for items
+            return;
+        }
+
         // We're ready for the voids!
         message(fn + ': running z' + game.global.world + ' void maps', 'Notices');
         window.RedAcesUI.runVoidMaps();
