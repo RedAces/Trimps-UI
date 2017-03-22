@@ -712,10 +712,11 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
     }
 
     // Auto run Maps
-    if (game.global.world < climbUntilZone && useDaggerClimb && (game.global.currentMapId == '')) {
-        // Were currently in a map, check if we want to toggle repeat off!
-        if (addSpecials(true, true, null, true).indexOf('Dagadder') == -1) {
+    if (game.global.world < climbUntilZone && useDaggerClimb && (game.global.currentMapId != '')) {
+        // We're currently in a map, check if we want to toggle repeat off!
+        if ((addSpecials(true, true, null, true).indexOf('Dagadder') == -1) && game.global.repeatMap) {
             // Dont repeat this map any more...
+            message(fn + ': stop running z' + game.global.world + ' maps because dagger climb is done', 'Notices');
             repeatClicked();
         }
     }
