@@ -661,7 +661,7 @@ window.RedAcesUI.runVoidMaps = function() {
 
 /** Plays the game for you */
 
-window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone) {
+window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDaggerClimb) {
     if ((game.global.world > endZone)
         || (game.global.world < 10)
         || ((game.global.world == endZone) && window.RedAcesUI.options.autoPlay.done)
@@ -720,7 +720,11 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone) {
         ) {
             // addSpecials(..) will return a max of 13 (all prestiges one time)
             message('RA:autoPlay(): running z' + game.global.world + ' maps for prestiges', 'Notices');
-            window.RedAcesUI.runNewMap(2); // Repeat for items
+            if (useDaggerClimb) {
+                window.RedAcesUI.runNewMap(1); // Repeat to 10
+            } else {
+                window.RedAcesUI.runNewMap(2); // Repeat for items
+            }
         }
         return;
     }
@@ -819,7 +823,7 @@ window.RedAcesUI.mainLoop = function() {
     window.RedAcesUI.autoGather();
     window.RedAcesUI.displayEfficiency();
     window.RedAcesUI.autoPause();
-    window.RedAcesUI.autoPlay(180, 190, 210);
+    window.RedAcesUI.autoPlay(180, 190, 210, true);
 
     document.getElementById('metalPs').innerHTML.substring(1, document.getElementById('metalPs').innerHTML.length - 4)
 };
