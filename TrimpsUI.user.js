@@ -712,13 +712,16 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
     }
 
     // Auto run Maps
-    if (game.global.world < climbUntilZone && useDaggerClimb && (game.global.currentMapId != '')) {
-        // We're currently in a map, check if we want to toggle repeat off!
-        if ((addSpecials(true, true, null, true).indexOf('Dagadder') == -1) && game.global.repeatMap) {
-            // Dont repeat this map any more...
-            message(fn + ': stop running z' + game.global.world + ' maps because dagger climb is done', 'Notices');
-            repeatClicked();
-        }
+    if ((game.global.world < climbUntilZone)
+        && useDaggerClimb
+        && (game.global.currentMapId != '')
+        && (addSpecials(true, true, null, true).indexOf('Dagadder') == -1)
+        && game.global.repeatMap
+    ) {
+        // We're currently in a map, wanna use dagger climb, but there are no more prestiges for it!
+        // Dont repeat this map any more...
+        message(fn + ': stop running z' + game.global.world + ' maps because dagger climb is done', 'Notices');
+        repeatClicked();
     }
 
     if (game.global.currentMapId != '') {
@@ -731,7 +734,7 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
         // addSpecials(..) will return a max of 13 (all prestiges one time)
 
         if (availablePrestiges.length > 0) {
-            if ((game.global.world % 10 == 1) && useDaggerClimb && (availablePrestiges.indexOf('Dagadder') !== -1)) {
+            if ((game.global.world % 10 == 1) && useDaggerClimb && (availablePrestiges.indexOf('Dagadder') != -1)) {
                 // TODO "Tier first"
                 message(fn + ': running z' + game.global.world + ' maps for prestiges (dagger climb)', 'Notices');
                 window.RedAcesUI.runNewMap(1); // Repeat to 10
