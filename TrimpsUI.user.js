@@ -54,7 +54,7 @@ window.RedAcesUI.options = {
     "autoBuyEquipment": {
         "enabled":                       1,
         "maxLevelPrestigeAvailable":     5,
-        "maxLevelPrestigeUnavailable":  40,
+        "maxLevelPrestigeUnavailable":  20,
         "maxRelEfficiency":            1.5
     },
     "autoPause": {
@@ -673,7 +673,7 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
         }
 
         while (game.global.GeneticistassistSetting != seconds) {
-            message(messageSuffix + 'Toggling GA to reach ' + seconds, "Notices");
+            message(messageSuffix + 'Toggling GA to reach ' + seconds + ' seconds of breed time', 'Notices');
             toggleGeneticistassist();
         }
     }
@@ -715,7 +715,7 @@ window.RedAcesUI.autoPlay = function() {
     }
 
     if (getAvailableGoldenUpgrades() > 0) {
-        message('RA:autoPlay(): buying Golden Helium', "Notices");
+        message('RA:autoPlay(): buying Golden Helium', 'Notices');
         buyGoldenUpgrade('Helium');
     }
 
@@ -723,18 +723,18 @@ window.RedAcesUI.autoPlay = function() {
     var mapObj          = getCurrentMapObject(),
         targetFormation = 4; // Scryer
 
-    if (((mapObj !== undefined) && (mapObj.location == "Void"))
+    if (((mapObj !== undefined) && (mapObj.location == 'Void'))
         || ((mapObj === undefined) && (game.global.world === 200) && (game.global.spireActive))
     ) {
         targetFormation = 2; // Dominance
     }
 
     if ((game.upgrades.Formations.allowed) && (game.global.formation != targetFormation) && (game.global.world >= 60)) {
-        message('RA:autoPlay(): setting formation to ' + targetFormation, "Notices");
+        message('RA:autoPlay(): setting formation to ' + targetFormation, 'Notices');
         setFormation(targetFormation)
     }
 
-    if (game.global.world < opt.voidMapZone) {
+    if (game.global.world < (opt.voidMapZone - 1)) {
         window.RedAcesUI.setGeneticistAssist(10, 'RA:autoPlay():');
     } else {
         window.RedAcesUI.setGeneticistAssist(30, 'RA:autoPlay():');
@@ -746,7 +746,7 @@ window.RedAcesUI.autoPlay = function() {
 
     if (game.global.spireActive) {
         // TODO Calc if we're one hitting the spire enemies
-        if ((mapObj !== undefined) && addSpecials(true, true, null, true).length > 0) {
+        if ((mapObj === undefined) && addSpecials(true, true, null, true).length > 0) {
             // We're in the spire and have prestiges left to farm!!
             message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of spire!)', 'Notices');
             window.RedAcesUI.runNewMap(2); // Repeat for items
@@ -757,14 +757,14 @@ window.RedAcesUI.autoPlay = function() {
 
     if (game.global.world == opt.voidMapZone) {
         // TODO Calc if we're one hitting the void map enemies
-        if ((mapObj !== undefined) && addSpecials(true, true, null, true).length > 0) {
+        if ((mapObj === undefined) && addSpecials(true, true, null, true).length > 0) {
             // We're in the voidMapZone and have prestiges left to farm!!
             message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of void maps!)', 'Notices');
             window.RedAcesUI.runNewMap(2); // Repeat for items
             return;
         }
 
-        if ((mapObj !== undefined) && game.global.totalVoidMaps > 0) {
+        if ((mapObj === undefined) && game.global.totalVoidMaps > 0) {
             // We're ready for the voids!
             message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
             window.RedAcesUI.runVoidMaps();
