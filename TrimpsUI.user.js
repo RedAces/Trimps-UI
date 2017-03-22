@@ -761,21 +761,20 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, prest
         return;
     }
 
-    if ((game.global.world == voidMapZone)
-        && (game.global.mapBonus >= 10)
-        && (game.global.totalVoidMaps > 0)
-    ) {
+    if (game.global.world == voidMapZone) {
         if (addSpecials(true, true, null, true).length > 0) {
-            // We're in the spire and have prestiges left to farm!!
+            // We're in the voidMapZone and have prestiges left to farm!!
             message(fn + ': running z' + game.global.world + ' maps for all prestiges (bc of void maps!)', 'Notices');
             window.RedAcesUI.runNewMap(2); // Repeat for items
             return;
         }
 
-        // We're ready for the voids!
-        message(fn + ': running z' + game.global.world + ' void maps', 'Notices');
-        window.RedAcesUI.runVoidMaps();
-        return;
+        if (game.global.totalVoidMaps > 0) {
+            // We're ready for the voids!
+            message(fn + ': running z' + game.global.world + ' void maps', 'Notices');
+            window.RedAcesUI.runVoidMaps();
+            return;
+        }
     }
 
     if ((game.global.mapBonus < 10)
