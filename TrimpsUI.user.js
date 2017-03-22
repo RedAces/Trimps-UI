@@ -60,6 +60,14 @@ window.RedAcesUI.options = {
     "autoPause": {
         "enabled":      0,
         "worldLevel": 179
+    },
+    "autoPlay": {
+        "enabled":        true,
+        "done":           false,
+        "climbUntilZone": 180,
+        "voidMapZone":    190,
+        "endZone":        210,
+        "prestigeClimb":  "Dagadder"
     }
 };
 
@@ -675,23 +683,24 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
     }
 };
 
-/**
- * Plays the game for you
- * e. g. window.RedAcesUI.autoPlay(180, 190, 210, 'Dagadder');
- */
-window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, prestigeClimb) {
-    if ((game.global.world > endZone)
+/** Plays the game for you */
+window.RedAcesUI.autoPlay = function() {
+    var opt = window.RedAcesUI.options.autoPlay;
+
+    if (!opt.enabled) {
+        return;
+    }
+
+    if ((game.global.world > opt.endZone)
         || (game.global.world < 10)
-        || ((game.global.world == endZone) && window.RedAcesUI.options.autoPlay.done)
+        || ((game.global.world == opt.endZone) && window.RedAcesUI.options.autoPlay.done)
     ) {
         // nothing to do here anymore!
         return;
     }
 
-    var fn = 'RA:autoPlay(' + climbUntilZone + ',' + voidMapZone + ',' + endZone + ',' + prestigeClimb + ')';
-
     // We're not done yet!
-    window.RedAcesUI.options.autoPlay = {"done": 0};
+    opt.done = false;
 
     if (game.global.pauseFight) {
         // Set 'AutoFight On'
@@ -699,7 +708,7 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, prest
     }
 
     if (getAvailableGoldenUpgrades() > 0) {
-        message(fn + ': buying Golden Helium', "Notices");
+        message('RA:autoPlay(): buying Golden Helium', "Notices");
         buyGoldenUpgrade('Helium');
     }
 
@@ -714,26 +723,26 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, prest
     }
 
     if ((game.upgrades.Formations.allowed) && (game.global.formation != targetFormation) && (game.global.world >= 60)) {
-        message(fn + ': setting formation to ' + targetFormation, "Notices");
+        message('RA:autoPlay(): setting formation to ' + targetFormation, "Notices");
         setFormation(targetFormation)
     }
 
-    if (game.global.world < climbUntilZone) {
-        window.RedAcesUI.setGeneticistAssist(10, fn + ':');
+    if (game.global.world < opt.climbUntilZone) {
+        window.RedAcesUI.setGeneticistAssist(10, 'RA:autoPlay():');
     } else {
-        window.RedAcesUI.setGeneticistAssist(30, fn + ':');
+        window.RedAcesUI.setGeneticistAssist(30, 'RA:autoPlay():');
     }
 
     // Auto run Maps
-    if (prestigeClimb
-        && (game.global.world < climbUntilZone)
+    if (opt.prestigeClimb
+        && (game.global.world < opt.climbUntilZone)
         && (game.global.currentMapId != '')
-        && (addSpecials(true, true, null, true).indexOf(prestigeClimb) == -1)
+        && (addSpecials(true, true, null, true).indexOf(opt.prestigeClimb) == -1)
         && game.global.repeatMap
     ) {
-        // We're currently in a map, wanna use $prestigeClimb, but there are no more prestiges for it!
+        // We're currently in a map, wanna use $opt.prestigeClimb, but there are no more prestiges for it!
         // Dont repeat this map any more...
-        message(fn + ': stop running z' + game.global.world + ' maps because ' + prestigeClimb + ' climb is done', 'Notices');
+        message('RA:autoPlay(): stop running z' + game.global.world + ' maps because ' + opt.prestigeClimb + ' climb is done', 'Notices');
         repeatClicked();
     }
 
@@ -745,7 +754,7 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, prest
     if (game.global.spireActive) {
         if (addSpecials(true, true, null, true).length > 0) {
             // We're in the spire and have prestiges left to farm!!
-            message(fn + ': running z' + game.global.world + ' maps for all prestiges (bc of spire!)', 'Notices');
+            message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of spire!)', 'Notices');
             window.RedAcesUI.runNewMap(2); // Repeat for items
             return;
         }
@@ -753,25 +762,25 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, prest
         // TODO Spire Edge-Case! (More farming?)
     }
 
-    if (game.global.world >= endZone) {
+    if (game.global.world >= opt.endZone) {
         // We're done! Let it farm and the user may choose what to do next
-        message(fn + ': running z' + endZone + ' maps to farm forever', 'Notices');
+        message('RA:autoPlay(): running z' + opt.endZone + ' maps to farm forever', 'Notices');
         window.RedAcesUI.runNewMap(0); // Repeat forever
-        window.RedAcesUI.options.autoPlay.done = 1;
+        opt.autoPlay.done = 1;
         return;
     }
 
-    if (game.global.world == voidMapZone) {
+    if (game.global.world == opt.voidMapZone) {
         if (addSpecials(true, true, null, true).length > 0) {
             // We're in the voidMapZone and have prestiges left to farm!!
-            message(fn + ': running z' + game.global.world + ' maps for all prestiges (bc of void maps!)', 'Notices');
+            message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of void maps!)', 'Notices');
             window.RedAcesUI.runNewMap(2); // Repeat for items
             return;
         }
 
         if (game.global.totalVoidMaps > 0) {
             // We're ready for the voids!
-            message(fn + ': running z' + game.global.world + ' void maps', 'Notices');
+            message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
             window.RedAcesUI.runVoidMaps();
             return;
         }
@@ -779,24 +788,24 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, prest
 
     if ((game.global.mapBonus < 10)
         && (game.global.world % 2 == 0)
-        && (game.global.world < endZone)
+        && (game.global.world < opt.endZone)
     ) {
-        message(fn + ': running z' + game.global.world + ' maps for stacking damage boost', 'Notices');
+        message('RA:autoPlay(): running z' + game.global.world + ' maps for stacking damage boost', 'Notices');
         window.RedAcesUI.runNewMap(1); // Repeat to 10
         return;
     }
 
-    if (game.global.world < climbUntilZone) {
+    if (game.global.world < opt.climbUntilZone) {
         var availablePrestiges = addSpecials(true, true, null, true);
         // addSpecials(..) will return a max of 13 (all prestiges one time)
 
         if (availablePrestiges.length > 0) {
-            if ((game.global.world % 10 == 1) && prestigeClimb && (availablePrestiges.indexOf(prestigeClimb) != -1)) {
+            if ((game.global.world % 10 == 1) && opt.prestigeClimb && (availablePrestiges.indexOf(opt.prestigeClimb) != -1)) {
                 // TODO "Tier first"
-                message(fn + ': running z' + game.global.world + ' maps for prestiges (' + prestigeClimb + ' climb)', 'Notices');
+                message('RA:autoPlay(): running z' + game.global.world + ' maps for prestiges (' + opt.prestigeClimb + ' climb)', 'Notices');
                 window.RedAcesUI.runNewMap(1); // Repeat to 10
-            } else if ((game.global.world % 10 == 5) && !prestigeClimb) {
-                message(fn + ': running z' + game.global.world + ' maps for all prestiges', 'Notices');
+            } else if ((game.global.world % 10 == 5) && !opt.prestigeClimb) {
+                message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges', 'Notices');
                 window.RedAcesUI.runNewMap(2); // Repeat for items
             }
         }
@@ -870,7 +879,7 @@ window.RedAcesUI.mainLoop = function() {
     window.RedAcesUI.autoGather();
     window.RedAcesUI.displayEfficiency();
     window.RedAcesUI.autoPause();
-    window.RedAcesUI.autoPlay(180, 190, 210, 'Dagadder');
+    window.RedAcesUI.autoPlay();
 
     document.getElementById('metalPs').innerHTML.substring(1, document.getElementById('metalPs').innerHTML.length - 4)
 };
