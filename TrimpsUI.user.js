@@ -661,9 +661,25 @@ window.RedAcesUI.runVoidMaps = function() {
     }
 };
 
-/** Plays the game for you */
+/** sets the timer of the Geneticist Assist to seconds */
+window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
+    if (!game.jobs.Geneticist.locked && (game.global.GeneticistassistSetting != seconds)) {
+        if (game.global.GeneticistassistSteps.indexOf(seconds) == -1) {
+            game.global.GeneticistassistSteps = [-1, 1, 10, seconds];
+        }
 
-window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDaggerClimb) {
+        while (game.global.GeneticistassistSetting != seconds) {
+            message(messageSuffix + 'Toggling GA to reach ' + seconds, "Notices");
+            toggleGeneticistassist();
+        }
+    }
+};
+
+/**
+ * Plays the game for you
+ * e. g. window.RedAcesUI.autoPlay(180, 190, 210, 'Dagadder');
+ */
+window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, prestigeClimb) {
     if ((game.global.world > endZone)
         || (game.global.world < 10)
         || ((game.global.world == endZone) && window.RedAcesUI.options.autoPlay.done)
@@ -672,7 +688,7 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
         return;
     }
 
-    var fn = 'RA:autoPlay(' + climbUntilZone + ',' + voidMapZone + ',' + endZone + ',' + (1 * useDaggerClimb) + ')';
+    var fn = 'RA:autoPlay(' + climbUntilZone + ',' + voidMapZone + ',' + endZone + ',' + prestigeClimb + ')';
 
     // We're not done yet!
     window.RedAcesUI.options.autoPlay = {"done": 0};
@@ -702,25 +718,22 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
         setFormation(targetFormation)
     }
 
-    if (!game.jobs.Geneticist.locked && (game.global.GeneticistassistSetting != 30)) {
-        game.global.GeneticistassistSteps.pop();
-        game.global.GeneticistassistSteps.push(30);
-        while (game.global.GeneticistassistSetting != 30) {
-            message(fn + ': toggling GA to 30', "Notices");
-            toggleGeneticistassist();
-        }
+    if (game.global.world < climbUntilZone) {
+        window.RedAcesUI.setGeneticistAssist(10, fn + ':');
+    } else {
+        window.RedAcesUI.setGeneticistAssist(30, fn + ':');
     }
 
     // Auto run Maps
-    if ((game.global.world < climbUntilZone)
-        && useDaggerClimb
+    if (prestigeClimb
+        && (game.global.world < climbUntilZone)
         && (game.global.currentMapId != '')
-        && (addSpecials(true, true, null, true).indexOf('Dagadder') == -1)
+        && (addSpecials(true, true, null, true).indexOf(prestigeClimb) == -1)
         && game.global.repeatMap
     ) {
-        // We're currently in a map, wanna use dagger climb, but there are no more prestiges for it!
+        // We're currently in a map, wanna use $prestigeClimb, but there are no more prestiges for it!
         // Dont repeat this map any more...
-        message(fn + ': stop running z' + game.global.world + ' maps because dagger climb is done', 'Notices');
+        message(fn + ': stop running z' + game.global.world + ' maps because ' + prestigeClimb + ' climb is done', 'Notices');
         repeatClicked();
     }
 
@@ -729,29 +742,25 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
         return;
     }
 
-    if (game.global.world < climbUntilZone) {
-        var availablePrestiges = addSpecials(true, true, null, true);
-        // addSpecials(..) will return a max of 13 (all prestiges one time)
-
-        if (availablePrestiges.length > 0) {
-            if ((game.global.world % 10 == 1) && useDaggerClimb && (availablePrestiges.indexOf('Dagadder') != -1)) {
-                // TODO "Tier first"
-                message(fn + ': running z' + game.global.world + ' maps for prestiges (dagger climb)', 'Notices');
-                window.RedAcesUI.runNewMap(1); // Repeat to 10
-            } else if ((game.global.world % 10 == 5) && !useDaggerClimb) {
-                message(fn + ': running z' + game.global.world + ' maps for all prestiges', 'Notices');
-                window.RedAcesUI.runNewMap(2); // Repeat for items
-            }
+    if ((mapObj === undefined)
+        && (game.global.world === 200)
+        && (game.global.spireActive)
+    ) {
+        if (addSpecials(true, true, null, true).length > 0) {
+            // We're in the spire and have prestiges left to farm!!
+            message(fn + ': running z' + game.global.world + ' maps for all prestiges (bc of spire!)', 'Notices');
+            window.RedAcesUI.runNewMap(2); // Repeat for items
+            return;
         }
-        return;
+
+        // TODO Spire Edge-Case! (More farming?)
     }
 
-    if ((game.global.mapBonus < 10)
-        && (game.global.world % 2 == 0)
-        && (game.global.world < endZone)
-    ) {
-        message(fn + ': running z' + game.global.world + ' maps for stacking damage boost', 'Notices');
-        window.RedAcesUI.runNewMap(1); // Repeat to 10
+    if (game.global.world >= endZone) {
+        // We're done! Let it farm and the user may choose what to do next
+        message(fn + ': running z' + endZone + ' maps to farm forever', 'Notices');
+        window.RedAcesUI.runNewMap(0); // Repeat forever
+        window.RedAcesUI.options.autoPlay.done = 1;
         return;
     }
 
@@ -765,11 +774,29 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
         return;
     }
 
-    if (game.global.world == endZone) {
-        // We're done! Let it farm and the user may choose what to do next
-        message(fn + ': running z' + endZone + ' maps to farm forever', 'Notices');
-        window.RedAcesUI.runNewMap(0); // Repeat forever
-        window.RedAcesUI.options.autoPlay.done = 1;
+    if ((game.global.mapBonus < 10)
+        && (game.global.world % 2 == 0)
+        && (game.global.world < endZone)
+    ) {
+        message(fn + ': running z' + game.global.world + ' maps for stacking damage boost', 'Notices');
+        window.RedAcesUI.runNewMap(1); // Repeat to 10
+        return;
+    }
+
+    if (game.global.world < climbUntilZone) {
+        var availablePrestiges = addSpecials(true, true, null, true);
+        // addSpecials(..) will return a max of 13 (all prestiges one time)
+
+        if (availablePrestiges.length > 0) {
+            if ((game.global.world % 10 == 1) && prestigeClimb && (availablePrestiges.indexOf(prestigeClimb) != -1)) {
+                // TODO "Tier first"
+                message(fn + ': running z' + game.global.world + ' maps for prestiges (' + prestigeClimb + ' climb)', 'Notices');
+                window.RedAcesUI.runNewMap(1); // Repeat to 10
+            } else if ((game.global.world % 10 == 5) && !prestigeClimb) {
+                message(fn + ': running z' + game.global.world + ' maps for all prestiges', 'Notices');
+                window.RedAcesUI.runNewMap(2); // Repeat for items
+            }
+        }
         return;
     }
 };
@@ -840,7 +867,7 @@ window.RedAcesUI.mainLoop = function() {
     window.RedAcesUI.autoGather();
     window.RedAcesUI.displayEfficiency();
     window.RedAcesUI.autoPause();
-    window.RedAcesUI.autoPlay(180, 190, 210, true);
+    window.RedAcesUI.autoPlay(180, 190, 210, 'Dagadder');
 
     document.getElementById('metalPs').innerHTML.substring(1, document.getElementById('metalPs').innerHTML.length - 4)
 };
