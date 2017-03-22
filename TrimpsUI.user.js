@@ -597,6 +597,8 @@ window.RedAcesUI.runNewMap = function(repeatUntil) {
         toggleSetting('exitTo')
     }
 
+    // TODO Test if there is already a map with the current level !
+
     if (buyMap() < 0) {
         return 'buying a map failed';
     }
@@ -670,6 +672,8 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
         return;
     }
 
+    var fn = 'RA:autoPlay(' + climbUntilZone + ',' + voidMapZone + ',' + endZone + ',' + (1 * useDaggerClimb) + ')';
+
     // We're not done yet!
     window.RedAcesUI.options.autoPlay = {"done": 0};
 
@@ -679,7 +683,7 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
     }
 
     if (getAvailableGoldenUpgrades() > 0) {
-        message('RA:autoPlay(): buying Golden Helium', "Notices");
+        message(fn + ': buying Golden Helium', "Notices");
         buyGoldenUpgrade('Helium');
     }
 
@@ -694,7 +698,7 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
     }
 
     if ((game.upgrades.Formations.allowed) && (game.global.formation != targetFormation) && (game.global.world >= 60)) {
-        message('RA:autoPlay(): setting formation to ' + targetFormation, "Notices");
+        message(fn + ': setting formation to ' + targetFormation, "Notices");
         setFormation(targetFormation)
     }
 
@@ -702,27 +706,36 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
         game.global.GeneticistassistSteps.pop();
         game.global.GeneticistassistSteps.push(30);
         while (game.global.GeneticistassistSetting != 30) {
-            message('RA:autoPlay(): toggling GA to 30', "Notices");
+            message(fn + ': toggling GA to 30', "Notices");
             toggleGeneticistassist();
         }
     }
 
     // Auto run Maps
+    if (game.global.world < climbUntilZone && useDaggerClimb && (game.global.currentMapId == '')) {
+        // Were currently in a map, check if we want to toggle repeat off!
+        if (addSpecials(true, true, null, true).indexOf('Dagadder') == -1) {
+            // Dont repeat this map any more...
+            repeatClicked();
+        }
+    }
+
     if (game.global.currentMapId != '') {
         // We're already running a map!
         return;
     }
 
     if (game.global.world < climbUntilZone) {
-        if ((game.global.world % 5 == 0)
-            && (game.global.world % 10 != 0)
-            && (addSpecials(true, true, null, true).length > 0)
-        ) {
-            // addSpecials(..) will return a max of 13 (all prestiges one time)
-            message('RA:autoPlay(): running z' + game.global.world + ' maps for prestiges', 'Notices');
-            if (useDaggerClimb) {
+        var availablePrestiges = addSpecials(true, true, null, true);
+        // addSpecials(..) will return a max of 13 (all prestiges one time)
+
+        if (availablePrestiges.length > 0) {
+            if ((game.global.world % 10 == 1) && useDaggerClimb && (availablePrestiges.indexOf('Dagadder') !== -1)) {
+                // TODO "Tier first"
+                message(fn + ': running z' + game.global.world + ' maps for prestiges (dagger climb)', 'Notices');
                 window.RedAcesUI.runNewMap(1); // Repeat to 10
-            } else {
+            } else if ((game.global.world % 10 == 5) && !useDaggerClimb) {
+                message(fn + ': running z' + game.global.world + ' maps for all prestiges', 'Notices');
                 window.RedAcesUI.runNewMap(2); // Repeat for items
             }
         }
@@ -733,7 +746,7 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
         && (game.global.world % 2 == 0)
         && (game.global.world < endZone)
     ) {
-        message('RA:autoPlay(): running z' + game.global.world + ' maps for stacking damage boost', 'Notices');
+        message(fn + ': running z' + game.global.world + ' maps for stacking damage boost', 'Notices');
         window.RedAcesUI.runNewMap(1); // Repeat to 10
         return;
     }
@@ -743,14 +756,14 @@ window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone, useDa
         && (game.global.totalVoidMaps > 0)
     ) {
         // We're ready for the voids!
-        message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
+        message(fn + ': running z' + game.global.world + ' void maps', 'Notices');
         window.RedAcesUI.runVoidMaps();
         return;
     }
 
     if (game.global.world == endZone) {
         // We're done! Let it farm and the user may choose what to do next
-        message('RA:autoPlay(): running z' + endZone + ' maps to farm forever', 'Notices');
+        message(fn + ': running z' + endZone + ' maps to farm forever', 'Notices');
         window.RedAcesUI.runNewMap(0); // Repeat forever
         window.RedAcesUI.options.autoPlay.done = 1;
         return;
