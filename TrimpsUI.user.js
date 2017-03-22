@@ -659,19 +659,19 @@ window.RedAcesUI.runVoidMaps = function() {
     }
 };
 
-/** Auto runs the "Corrupted" Challenge */
+/** Plays the game for you */
 
-window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZone, endZone) {
+window.RedAcesUI.autoPlay = function(climbUntilZone, voidMapZone, endZone) {
     if ((game.global.world > endZone)
         || (game.global.world < 10)
-        || ((game.global.world == endZone) && window.RedAcesUI.options.autoRunCorruptedChallenge.done)
+        || ((game.global.world == endZone) && window.RedAcesUI.options.autoPlay.done)
     ) {
         // nothing to do here anymore!
         return;
     }
 
     // We're not done yet!
-    window.RedAcesUI.options.autoRunCorruptedChallenge = {"done": 0};
+    window.RedAcesUI.options.autoPlay = {"done": 0};
 
     if (game.global.pauseFight) {
         // Set 'AutoFight On'
@@ -679,6 +679,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
     }
 
     if (getAvailableGoldenUpgrades() > 0) {
+        message('RA:autoPlay(): buying Golden Helium', "Notices");
         buyGoldenUpgrade('Helium');
     }
 
@@ -693,7 +694,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
     }
 
     if ((game.upgrades.Formations.allowed) && (game.global.formation != targetFormation) && (game.global.world >= 60)) {
-        message('RA:autoRunCorruptedChallenge(): setting formation', "Notices");
+        message('RA:autoPlay(): setting formation to ' + targetFormation, "Notices");
         setFormation(targetFormation)
     }
 
@@ -701,7 +702,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
         game.global.GeneticistassistSteps.pop();
         game.global.GeneticistassistSteps.push(30);
         while (game.global.GeneticistassistSetting != 30) {
-            message('RA:autoRunCorruptedChallenge(): toggling GA', "Notices");
+            message('RA:autoPlay(): toggling GA to 30', "Notices");
             toggleGeneticistassist();
         }
     }
@@ -718,7 +719,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
             && (addSpecials(true, true, null, true).length > 0)
         ) {
             // addSpecials(..) will return a max of 13 (all prestiges one time)
-            message('RA:autoRunCorruptedChallenge(): running maps for prestiges', 'Notices');
+            message('RA:autoPlay(): running z' + game.global.world + ' maps for prestiges', 'Notices');
             window.RedAcesUI.runNewMap(2); // Repeat for items
         }
         return;
@@ -728,7 +729,7 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
         && (game.global.world % 2 == 0)
         && (game.global.world < endZone)
     ) {
-        message('RA:autoRunCorruptedChallenge(): running maps for stacking damage boost', 'Notices');
+        message('RA:autoPlay(): running z' + game.global.world + ' maps for stacking damage boost', 'Notices');
         window.RedAcesUI.runNewMap(1); // Repeat to 10
         return;
     }
@@ -738,16 +739,16 @@ window.RedAcesUI.autoRunCorruptedChallenge = function(climbUntilZone, voidMapZon
         && (game.global.totalVoidMaps > 0)
     ) {
         // We're ready for the voids!
-        message('RA:autoRunCorruptedChallenge(): running void maps', 'Notices');
+        message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
         window.RedAcesUI.runVoidMaps();
         return;
     }
 
     if (game.global.world == endZone) {
         // We're done! Let it farm and the user may choose what to do next
-        message('RA:autoRunCorruptedChallenge(): running level ' + endZone + ' map to farm forever', 'Notices');
+        message('RA:autoPlay(): running z' + endZone + ' maps to farm forever', 'Notices');
         window.RedAcesUI.runNewMap(0); // Repeat forever
-        window.RedAcesUI.options.autoRunCorruptedChallenge.done = 1;
+        window.RedAcesUI.options.autoPlay.done = 1;
         return;
     }
 };
@@ -818,7 +819,7 @@ window.RedAcesUI.mainLoop = function() {
     window.RedAcesUI.autoGather();
     window.RedAcesUI.displayEfficiency();
     window.RedAcesUI.autoPause();
-    window.RedAcesUI.autoRunCorruptedChallenge(180, 190, 210);
+    window.RedAcesUI.autoPlay(180, 190, 210);
 
     document.getElementById('metalPs').innerHTML.substring(1, document.getElementById('metalPs').innerHTML.length - 4)
 };
