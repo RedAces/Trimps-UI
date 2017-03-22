@@ -62,12 +62,8 @@ window.RedAcesUI.options = {
         "worldLevel": 179
     },
     "autoPlay": {
-        "enabled":        true,
-        "done":           false,
-        "climbUntilZone": 180,
-        "voidMapZone":    190,
-        "endZone":        210,
-        "prestigeClimb":  "Dagadder"
+        "enabled":     true,
+        "voidMapZone": 190
     }
 };
 
@@ -255,7 +251,7 @@ window.RedAcesUI.displayEfficiency = function () {
 
                 efficiencySpan.innerHTML = '<br/><span style="padding:2px 5px;' + cssColor + '">'
                     + stat + ' #' + (1 * i + 1) + ' ('
-                    + (items[stat][i].costPerValue / bestStatEfficiency * 100).toFixed(0) + '%)</span>';
+                    + prettify(items[stat][i].costPerValue / bestStatEfficiency * 100) + '%)</span>';
             }
 
             if (window.RedAcesUI.options.autoBuyEquipment.enabled
@@ -683,24 +679,35 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
     }
 };
 
+/** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
+window.RedAcesUI.getNumberOfHitsToKillEnemy = function() {
+    var trimpMinDamage = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0],
+        enemyHealth    = game.global.getEnemyHealth(99, 'Turtlimp');
+
+    return enemyHealth / trimpMinDamage;
+};
+
+/**
+ * Returns the damage plus after overkilling two trimps
+ *
+ * if its >= 0 -> overkill!
+ * if its < 0  -> no overkill!
+ */
+window.RedAcesUI.getOverkillDamagePlus = function() {
+    var trimpMinDamage = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0],
+        enemyHealth    = game.global.getEnemyHealth(99, 'Turtlimp'),
+        trampleDamage  = trimpMinDamage - enemyHealth;
+
+    return trampleDamage * game.portal.Overkill.level * 0.005 - enemyHealth;
+};
+
 /** Plays the game for you */
 window.RedAcesUI.autoPlay = function() {
     var opt = window.RedAcesUI.options.autoPlay;
-
-    if (!opt.enabled) {
+    if (!opt.enabled || (game.global.world < 10)) {
+        // nothing to do here
         return;
     }
-
-    if ((game.global.world > opt.endZone)
-        || (game.global.world < 10)
-        || ((game.global.world == opt.endZone) && window.RedAcesUI.options.autoPlay.done)
-    ) {
-        // nothing to do here anymore!
-        return;
-    }
-
-    // We're not done yet!
-    opt.done = false;
 
     if (game.global.pauseFight) {
         // Set 'AutoFight On'
@@ -727,87 +734,86 @@ window.RedAcesUI.autoPlay = function() {
         setFormation(targetFormation)
     }
 
-    if (game.global.world < opt.climbUntilZone) {
+    if (game.global.world < opt.voidMapZone) {
         window.RedAcesUI.setGeneticistAssist(10, 'RA:autoPlay():');
     } else {
         window.RedAcesUI.setGeneticistAssist(30, 'RA:autoPlay():');
     }
 
-    // Auto run Maps
-    if (opt.prestigeClimb
-        && (game.global.world < opt.climbUntilZone)
-        && (game.global.currentMapId != '')
-        && (addSpecials(true, true, null, true).indexOf(opt.prestigeClimb) == -1)
-        && game.global.repeatMap
-    ) {
-        // We're currently in a map, wanna use $opt.prestigeClimb, but there are no more prestiges for it!
-        // Dont repeat this map any more...
-        message('RA:autoPlay(): stop running z' + game.global.world + ' maps because ' + opt.prestigeClimb + ' climb is done', 'Notices');
-        repeatClicked();
-    }
+    var numHits = window.RedAcesUI.getNumberOfHitsToKillEnemy();
 
-    if (mapObj !== undefined) {
-        // We're already running a map!
-        return;
-    }
+    // Auto run Maps
 
     if (game.global.spireActive) {
-        if (addSpecials(true, true, null, true).length > 0) {
+        // TODO Calc if we're one hitting the spire enemies
+        if ((mapObj !== undefined) && addSpecials(true, true, null, true).length > 0) {
             // We're in the spire and have prestiges left to farm!!
             message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of spire!)', 'Notices');
             window.RedAcesUI.runNewMap(2); // Repeat for items
             return;
         }
-
-        // TODO Spire Edge-Case! (More farming?)
-    }
-
-    if (game.global.world >= opt.endZone) {
-        // We're done! Let it farm and the user may choose what to do next
-        message('RA:autoPlay(): running z' + opt.endZone + ' maps to farm forever', 'Notices');
-        window.RedAcesUI.runNewMap(0); // Repeat forever
-        opt.autoPlay.done = 1;
         return;
     }
 
     if (game.global.world == opt.voidMapZone) {
-        if (addSpecials(true, true, null, true).length > 0) {
+        // TODO Calc if we're one hitting the void map enemies
+        if ((mapObj !== undefined) && addSpecials(true, true, null, true).length > 0) {
             // We're in the voidMapZone and have prestiges left to farm!!
             message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of void maps!)', 'Notices');
             window.RedAcesUI.runNewMap(2); // Repeat for items
             return;
         }
 
-        if (game.global.totalVoidMaps > 0) {
+        if ((mapObj !== undefined) && game.global.totalVoidMaps > 0) {
             // We're ready for the voids!
             message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
             window.RedAcesUI.runVoidMaps();
             return;
         }
-    }
-
-    if ((game.global.mapBonus < 10)
-        && (game.global.world % 2 == 0)
-        && (game.global.world < opt.endZone)
-    ) {
-        message('RA:autoPlay(): running z' + game.global.world + ' maps for stacking damage boost', 'Notices');
-        window.RedAcesUI.runNewMap(1); // Repeat to 10
         return;
     }
 
-    if (game.global.world < opt.climbUntilZone) {
-        var availablePrestiges = addSpecials(true, true, null, true);
-        // addSpecials(..) will return a max of 13 (all prestiges one time)
-
-        if (availablePrestiges.length > 0) {
-            if ((game.global.world % 10 == 1) && opt.prestigeClimb && (availablePrestiges.indexOf(opt.prestigeClimb) != -1)) {
-                // TODO "Tier first"
-                message('RA:autoPlay(): running z' + game.global.world + ' maps for prestiges (' + opt.prestigeClimb + ' climb)', 'Notices');
-                window.RedAcesUI.runNewMap(1); // Repeat to 10
-            } else if ((game.global.world % 10 == 5) && !opt.prestigeClimb) {
-                message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges', 'Notices');
-                window.RedAcesUI.runNewMap(2); // Repeat for items
-            }
+    if (game.global.world < (opt.voidMapZone - 5)) {
+        var overkillDamagePlus = window.RedAcesUI.getOverkillDamagePlus();
+        if ((overkillDamagePlus < 0) && (mapObj === undefined)) {
+            // More than 1 hit per enemy and in no map
+            message(
+                'RA:autoPlay(): running z' + game.global.world + ' maps to farm because we need '
+                + prettify(Math.abs(overkillDamagePlus)) + ' more damage to overkill things',
+                'Notices'
+            );
+            window.RedAcesUI.runNewMap(0); // Repeat forever
+            return;
+        } else if ((overkillDamagePlus >= 0) && (mapObj !== undefined) && game.global.repeatMap) {
+            // less than 1 hit per enemy, in map and "repeat on"
+            message(
+                'RA:autoPlay(): stop running z' + game.global.world + ' maps to farm because we have '
+                + prettify(overkillDamagePlus) + ' too much damage after overkilling things',
+                'Notices'
+            );
+            repeatClicked();
+            return;
+        }
+        return;
+    } else { // game.global.world > opt.voidMapZone
+        if ((numHits > 1) && (mapObj === undefined)) {
+            // More than 1 hit per enemy and in no map
+            message(
+                'RA:autoPlay(): running z' + game.global.world + ' maps to farm because we need '
+                + prettify(numHits) + ' hits per c99 Turtlimp',
+                'Notices'
+            );
+            window.RedAcesUI.runNewMap(0); // Repeat forever
+            return;
+        } else if ((numHits <= 1) && (mapObj !== undefined) && game.global.repeatMap) {
+            // less than 1 hit per enemy, in map and "repeat on"
+            message(
+                'RA:autoPlay(): stop running z' + game.global.world + ' maps to farm because we need '
+                + prettify(numHits) + ' hits per c99 Turtlimp',
+                'Notices'
+            );
+            repeatClicked();
+            return;
         }
         return;
     }
@@ -837,8 +843,8 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
 
     message(
         'With 2 mins of farming ' + metalPerSecond + ' metal per second you could afford a level '
-        + targetWarpstationCount.toFixed(2) + ' warpstation (at ' + gigastationAllowed + ' gigastations)'
-        + ' so use 0+' + rawWarpstationDelta.toFixed(2) + ' or ' + warpstationZero + '+' + warpstationDelta
+        + prettify(targetWarpstationCount) + ' warpstation (at ' + gigastationAllowed + ' gigastations)'
+        + ' so use 0+' + prettify(rawWarpstationDelta) + ' or ' + warpstationZero + '+' + warpstationDelta
         + ' strategy',
         'Notices'
     );
