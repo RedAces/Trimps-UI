@@ -63,7 +63,8 @@ window.RedAcesUI.options = {
     },
     "autoPlay": {
         "enabled":     true,
-        "voidMapZone": 190
+        "voidMapZone": 190,
+        "endZone":     210
     }
 };
 
@@ -746,29 +747,39 @@ window.RedAcesUI.autoPlay = function() {
 
     if (game.global.spireActive) {
         // TODO Calc if we're one hitting the spire enemies
-        if ((mapObj === undefined) && addSpecials(true, true, null, true).length > 0) {
-            // We're in the spire and have prestiges left to farm!!
-            message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of spire!)', 'Notices');
-            window.RedAcesUI.runNewMap(2); // Repeat for items
-            return;
+        if (mapObj === undefined) {
+            if (addSpecials(true, true, null, true).length > 0) {
+                // We're in the spire and have prestiges left to farm!!
+                message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of spire!)', 'Notices');
+                window.RedAcesUI.runNewMap(2); // Repeat for items
+                return;
+            }
+            if (game.global.mapBonus < 10) {
+                // We're in the spire and have prestiges left to farm!!
+                message('RA:autoPlay(): running z' + game.global.world + ' maps for stacking damage bonus', 'Notices');
+                window.RedAcesUI.runNewMap(1); // Repeat to 10
+                return;
+            }
         }
         return;
     }
 
     if (game.global.world == opt.voidMapZone) {
         // TODO Calc if we're one hitting the void map enemies
-        if ((mapObj === undefined) && addSpecials(true, true, null, true).length > 0) {
-            // We're in the voidMapZone and have prestiges left to farm!!
-            message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of void maps!)', 'Notices');
-            window.RedAcesUI.runNewMap(2); // Repeat for items
-            return;
-        }
+        if (mapObj === undefined) {
+            if (addSpecials(true, true, null, true).length > 0) {
+                // We're in the voidMapZone and have prestiges left to farm!!
+                message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of void maps!)', 'Notices');
+                window.RedAcesUI.runNewMap(2); // Repeat for items
+                return;
+            }
 
-        if ((mapObj === undefined) && game.global.totalVoidMaps > 0) {
-            // We're ready for the voids!
-            message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
-            window.RedAcesUI.runVoidMaps();
-            return;
+            if ( game.global.totalVoidMaps > 0) {
+                // We're ready for the voids!
+                message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
+                window.RedAcesUI.runVoidMaps();
+                return;
+            }
         }
         return;
     }
@@ -795,8 +806,13 @@ window.RedAcesUI.autoPlay = function() {
             return;
         }
         return;
-    } else { // game.global.world > opt.voidMapZone
-        if ((numHits > 1) && (mapObj === undefined)) {
+    } else { // game.global.world > (opt.voidMapZone - 5)
+        var targetNumHits = 1;
+        if (game.global.world > (opt.endZone - 5)) {
+            targetNumHits = 2;
+        }
+
+        if ((numHits > targetNumHits) && (mapObj === undefined)) {
             // More than 1 hit per enemy and in no map
             message(
                 'RA:autoPlay(): running z' + game.global.world + ' maps to farm because we need '
@@ -804,8 +820,7 @@ window.RedAcesUI.autoPlay = function() {
                 'Notices'
             );
             window.RedAcesUI.runNewMap(0); // Repeat forever
-            return;
-        } else if ((numHits <= 1) && (mapObj !== undefined) && game.global.repeatMap) {
+        } else if ((numHits <= targetNumHits) && (mapObj !== undefined) && game.global.repeatMap) {
             // less than 1 hit per enemy, in map and "repeat on"
             message(
                 'RA:autoPlay(): stop running z' + game.global.world + ' maps to farm because we need '
@@ -813,7 +828,6 @@ window.RedAcesUI.autoPlay = function() {
                 'Notices'
             );
             repeatClicked();
-            return;
         }
         return;
     }
