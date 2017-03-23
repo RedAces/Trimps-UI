@@ -695,6 +695,8 @@ window.RedAcesUI.getDummyEnemyHealth = function () {
 
     window.RedAcesUI.dummyEnemyLevel = game.global.world;
 
+    // message('Enemy health at z' + game.global.world + ': ' + prettify(window.RedAcesUI.dummyEnemyHealth), 'Notices');
+
     return window.RedAcesUI.dummyEnemyHealth;
 };
 
@@ -716,7 +718,7 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
 window.RedAcesUI.getNumberOfHitsToKillEnemy = function() {
     var trimpMinDamage = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0];
 
-    return window.RedAcesUI.getDummyEnemyHealth / trimpMinDamage;
+    return window.RedAcesUI.getDummyEnemyHealth() / trimpMinDamage;
 };
 
 /**
@@ -817,7 +819,7 @@ window.RedAcesUI.autoPlay = function() {
 
     if (game.global.world < (opt.voidMapZone - 5)) {
         var overkillDamagePlus = window.RedAcesUI.getOverkillDamagePlus();
-        if ((overkillDamagePlus < 0) && (mapObj === undefined)) {
+        if ((overkillDamagePlus < 0) && (mapObj === undefined) && (game.global.lastClearedCell > 0)) {
             // More than 1 hit per enemy and in no map
             message(
                 'RA:autoPlay(): running z' + game.global.world + ' maps to farm because we need '
