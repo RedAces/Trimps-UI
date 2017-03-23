@@ -580,12 +580,6 @@ window.RedAcesUI.runNewMap = function(repeatUntil) {
         return 'not in maps screen';
     }
 
-    document.getElementById('biomeAdvMapsSelect').value = 'Plentiful';
-    adjustMap('loot', 9);
-    adjustMap('size', 9);
-    adjustMap('difficulty', 9);
-    updateMapCost();
-
     if (!game.global.repeatMap) {
         repeatClicked();
     }
@@ -602,14 +596,35 @@ window.RedAcesUI.runNewMap = function(repeatUntil) {
         toggleSetting('exitTo')
     }
 
-    // TODO Test if there is already a map with the current level !
+    var existingMap = window.RedAcesUI.findExistingMap(game.global.world);
+    if (existingMap == undefined) {
+        document.getElementById('biomeAdvMapsSelect').value = 'Plentiful';
 
-    if (buyMap() < 0) {
-        return 'buying a map failed';
+        adjustMap('loot', 9);
+        adjustMap('size', 9);
+        adjustMap('difficulty', 9);
+        updateMapCost();
+
+        if (buyMap() < 0) {
+            return 'buying a map failed';
+        }
+    } else {
+        selectMap(existingMap.id);
     }
 
-    // new map is selected -> run it
     runMap();
+};
+
+window.RedAcesUI.findExistingMap = function (level) {
+    for (var i in game.global.mapsOwnedArray) {
+        if (!game.global.mapsOwnedArray.hasOwnProperty(i)) {
+            continue;
+        }
+        var mapObj = game.global.mapsOwnedArray[i];
+        if (mapObj.level == level) {
+            return mapObj;
+        }
+    }
 };
 
 /** Runs all void maps */
@@ -666,6 +681,23 @@ window.RedAcesUI.runVoidMaps = function() {
     }
 };
 
+window.RedAcesUI.dummyEnemyHealth = 0;
+window.RedAcesUI.dummyEnemyLevel  = 0;
+
+/** get the HP of an enemy dummy */
+window.RedAcesUI.getDummyEnemyHealth = function () {
+    var health = game.global.getEnemyHealth(99, 'Turtlimp');
+    if ((window.RedAcesUI.dummyEnemyHealth < health)
+        || (window.RedAcesUI.dummyEnemyLevel > game.global.world) // after portal
+    ) {
+        window.RedAcesUI.dummyEnemyHealth = health;
+    }
+
+    window.RedAcesUI.dummyEnemyLevel = game.global.world;
+
+    return window.RedAcesUI.dummyEnemyHealth;
+};
+
 /** sets the timer of the Geneticist Assist to seconds */
 window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
     if (!game.jobs.Geneticist.locked && (game.global.GeneticistassistSetting != seconds)) {
@@ -682,10 +714,9 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
 
 /** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
 window.RedAcesUI.getNumberOfHitsToKillEnemy = function() {
-    var trimpMinDamage = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0],
-        enemyHealth    = game.global.getEnemyHealth(99, 'Turtlimp');
+    var trimpMinDamage = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0];
 
-    return enemyHealth / trimpMinDamage;
+    return window.RedAcesUI.getDummyEnemyHealth / trimpMinDamage;
 };
 
 /**
@@ -696,7 +727,7 @@ window.RedAcesUI.getNumberOfHitsToKillEnemy = function() {
  */
 window.RedAcesUI.getOverkillDamagePlus = function() {
     var trimpMinDamage = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0],
-        enemyHealth    = game.global.getEnemyHealth(99, 'Turtlimp'),
+        enemyHealth    = window.RedAcesUI.getDummyEnemyHealth(),
         trampleDamage  = trimpMinDamage - enemyHealth;
 
     return trampleDamage * game.portal.Overkill.level * 0.005 - enemyHealth;
