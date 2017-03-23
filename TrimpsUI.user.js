@@ -774,7 +774,7 @@ window.RedAcesUI.autoPlay = function() {
                 return;
             }
 
-            if ( game.global.totalVoidMaps > 0) {
+            if (game.global.totalVoidMaps > 0) {
                 // We're ready for the voids!
                 message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
                 window.RedAcesUI.runVoidMaps();
