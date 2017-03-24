@@ -62,9 +62,10 @@ window.RedAcesUI.options = {
         "worldLevel":   179
     },
     "autoPlay": {
-        "enabled":     true,
-        "voidMapZone":  190,
-        "endZone":      210
+        "enabled":         true,
+        "voidMapZone":      190,
+        "endZone":          210,
+        "buyGolden":   'Helium'
     }
 };
 
@@ -596,20 +597,22 @@ window.RedAcesUI.runNewMap = function(repeatUntil) {
         toggleSetting('exitTo')
     }
 
-    var existingMap = window.RedAcesUI.buyOrFindExistingMap(game.global.world);
+    var existingMap = window.RedAcesUI.selectMap(game.global.world);
     if (existingMap !== undefined) {
-        selectMap(existingMap.id);
         runMap();
     }
 };
 
-window.RedAcesUI.buyOrFindExistingMap = function (level) {
+/** Selects a map of the requested level. Will use an existing one or buy a new one */
+window.RedAcesUI.selectMap = function (level) {
     for (var i in game.global.mapsOwnedArray) {
         if (!game.global.mapsOwnedArray.hasOwnProperty(i)) {
             continue;
         }
         var mapObj = game.global.mapsOwnedArray[i];
-        if (mapObj.level == level) {
+        if ((mapObj.level === level) && !mapObj.noRecycle) {
+            // only use maps of the requested level that are recyclable (no unique maps!)
+            selectMap(mapObj.id);
             return mapObj;
         }
     }
@@ -617,34 +620,26 @@ window.RedAcesUI.buyOrFindExistingMap = function (level) {
     document.getElementById('mapLevelInput').value = level;
 
     // No map found -> try buying
+    adjustMap('loot', 9);
+    adjustMap('size', 9);
+    adjustMap('difficulty', 9);
+
     var buyMapResult = buyMap();
-    if (buyMapResult == 1) {
+    if (buyMapResult === 1) {
         // Bought a map -> everythings fine
         return getMapIndex(game.global.lookingAtMap);
     }
-    if (buyMapResult == -3) {
+    if (buyMapResult === -3) {
         // Too few fragments, try one level lower
-        return window.RedAcesUI.buyOrFindExistingMap(level - 1);
+        return window.RedAcesUI.selectMap(level - 1);
     }
 
-    if (buyMapResult == -2) {
+    if (buyMapResult === -2) {
         document.getElementById('mapLevelInput').value = level - 5;
         recycleBelow(true);
 
         // try again!
-        return window.RedAcesUI.buyOrFindExistingMap(level);
-    }
-};
-
-window.RedAcesUI.findExistingMap = function (level) {
-    for (var i in game.global.mapsOwnedArray) {
-        if (!game.global.mapsOwnedArray.hasOwnProperty(i)) {
-            continue;
-        }
-        var mapObj = game.global.mapsOwnedArray[i];
-        if (mapObj.level == level) {
-            return mapObj;
-        }
+        return window.RedAcesUI.selectMap(level);
     }
 };
 
@@ -777,20 +772,20 @@ window.RedAcesUI.autoPlay = function() {
 
     if (getAvailableGoldenUpgrades() > 0) {
         message('RA:autoPlay(): buying Golden Helium', 'Notices');
-        buyGoldenUpgrade('Helium');
+        buyGoldenUpgrade(opt.buyGolden);
     }
 
     // Auto-Stance
     var mapObj          = getCurrentMapObject(),
         targetFormation = 4; // Scryer
 
-    if (((mapObj !== undefined) && (mapObj.location == 'Void'))
+    if (((mapObj !== undefined) && (mapObj.location === 'Void'))
         || ((mapObj === undefined) && (game.global.world === 200) && (game.global.spireActive))
     ) {
         targetFormation = 2; // Dominance
     }
 
-    if ((game.upgrades.Formations.allowed) && (game.global.formation != targetFormation) && (game.global.world >= 60)) {
+    if ((game.upgrades.Formations.allowed) && (game.global.formation !== targetFormation) && (game.global.world >= 60)) {
         message('RA:autoPlay(): setting formation to ' + targetFormation, 'Notices');
         setFormation(targetFormation)
     }
