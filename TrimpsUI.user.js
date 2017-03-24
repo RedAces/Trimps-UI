@@ -596,23 +596,44 @@ window.RedAcesUI.runNewMap = function(repeatUntil) {
         toggleSetting('exitTo')
     }
 
-    var existingMap = window.RedAcesUI.findExistingMap(game.global.world);
-    if (existingMap == undefined) {
-        document.getElementById('biomeAdvMapsSelect').value = 'Plentiful';
-
-        adjustMap('loot', 9);
-        adjustMap('size', 9);
-        adjustMap('difficulty', 9);
-        updateMapCost();
-
-        if (buyMap() < 0) {
-            return 'buying a map failed';
-        }
-    } else {
+    var existingMap = window.RedAcesUI.buyOrFindExistingMap(game.global.world);
+    if (existingMap !== undefined) {
         selectMap(existingMap.id);
+        runMap();
+    }
+};
+
+window.RedAcesUI.buyOrFindExistingMap = function (level) {
+    for (var i in game.global.mapsOwnedArray) {
+        if (!game.global.mapsOwnedArray.hasOwnProperty(i)) {
+            continue;
+        }
+        var mapObj = game.global.mapsOwnedArray[i];
+        if (mapObj.level == level) {
+            return mapObj;
+        }
     }
 
-    runMap();
+    document.getElementById('mapLevelInput').value = level;
+
+    // No map found -> try buying
+    var buyMapResult = buyMap();
+    if (buyMapResult == 1) {
+        // Bought a map -> everythings fine
+        return getMapIndex(game.global.lookingAtMap);
+    }
+    if (buyMapResult == -3) {
+        // Too few fragments, try one level lower
+        return window.RedAcesUI.buyOrFindExistingMap(level - 1);
+    }
+
+    if (buyMapResult == -2) {
+        document.getElementById('mapLevelInput').value = level - 5;
+        recycleBelow(true);
+
+        // try again!
+        return window.RedAcesUI.buyOrFindExistingMap(level);
+    }
 };
 
 window.RedAcesUI.findExistingMap = function (level) {
@@ -687,6 +708,12 @@ window.RedAcesUI.dummyEnemyLevel  = 0;
 /** get the HP of an enemy dummy */
 window.RedAcesUI.getDummyEnemyHealth = function () {
     var health = game.global.getEnemyHealth(99, 'Turtlimp');
+
+    if (game.global.world > 5 && game.global.mapsActive) {
+        // Maps have 10 % higher stats, we need to offset this
+        health /= 1.1;
+    }
+
     if ((window.RedAcesUI.dummyEnemyHealth < health)
         || (window.RedAcesUI.dummyEnemyLevel > game.global.world) // after portal
     ) {
@@ -779,7 +806,7 @@ window.RedAcesUI.autoPlay = function() {
     // Auto run Maps
 
     if (game.global.spireActive) {
-        // TODO Calc if we're one hitting the spire enemies
+        // TODO Calc if we're one hitting the spire enemies: getSpireStats(cellNum, name, 'Health')
         if (mapObj === undefined) {
             if (addSpecials(true, true, null, true).length > 0) {
                 // We're in the spire and have prestiges left to farm!!
