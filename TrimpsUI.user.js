@@ -13,19 +13,19 @@
 window.RedAcesUI         = window.RedAcesUI || {};
 window.RedAcesUI.options = {
     "autoBuild": {
-        "enabled":            1,
-        "warpstationZero":    5,
-        "warpstationDelta": 5.5,
+        "enabled":          true,
+        "warpstationZero":     5,
+        "warpstationDelta":  5.5,
         "buildings": {
-            "Gym":         -1,
-            "Tribute":     -1,
-            "Collector":   41,
-            "Gateway":     25,
-            "Resort":      50,
-            "Hotel":       75,
-            "Mansion":    100,
-            "House":      100,
-            "Hut":        100
+            "Gym":            -1,
+            "Tribute":        -1,
+            "Collector":      41,
+            "Gateway":        25,
+            "Resort":         50,
+            "Hotel":          75,
+            "Mansion":       100,
+            "House":         100,
+            "Hut":           100
         },
         "cheapBuildings": {
             "Collector": {
@@ -46,25 +46,25 @@ window.RedAcesUI.options = {
         "startWorldZone":  5
     },
     "autoGather": {
-        "enabled": 1
+        "enabled": true
     },
     "displayEfficiency": {
-        "enabled": 1
+        "enabled": true
     },
     "autoBuyEquipment": {
-        "enabled":                       1,
-        "maxLevelPrestigeAvailable":     5,
-        "maxLevelPrestigeUnavailable":  20,
-        "maxRelEfficiency":            1.5
+        "enabled":                     true,
+        "maxLevelPrestigeAvailable":      5,
+        "maxLevelPrestigeUnavailable":   20,
+        "maxRelEfficiency":             1.5
     },
     "autoPause": {
-        "enabled":      0,
-        "worldLevel": 179
+        "enabled":    false,
+        "worldLevel":   179
     },
     "autoPlay": {
         "enabled":     true,
-        "voidMapZone": 190,
-        "endZone":     210
+        "voidMapZone":  190,
+        "endZone":      210
     }
 };
 
