@@ -62,12 +62,12 @@ window.RedAcesUI.options = {
         "worldLevel":   179
     },
     "autoPlay": {
-        "enabled":               true,
-        "voidMapZone":            190,
-        "endZone":                210,
-        "buyGolden":         'Helium',
-        "targetEnemy":     'Turtlimp',
-        "targetSpireCell":         61
+        "enabled":                 true,
+        "voidMapZone":              190,
+        "overkillUntilZone":        205,
+        "buyGolden":           'Helium',
+        "targetEnemy":       'Turtlimp',
+        "targetSpireCell":           61
     }
 };
 
@@ -254,8 +254,7 @@ window.RedAcesUI.displayEfficiency = function () {
                 }
 
                 efficiencySpan.innerHTML = '<br/><span style="padding:2px 5px;' + cssColor + '">'
-                    + stat + ' #' + (1 * i + 1) + ' ('
-                    + prettify(items[stat][i].costPerValue / bestStatEfficiency * 100) + '%)</span>';
+                    + stat + ' #' + (1 * i + 1) + '</span>';
             }
 
             if (window.RedAcesUI.options.autoBuyEquipment.enabled
@@ -578,6 +577,7 @@ window.RedAcesUI.runNewMap = function(repeatUntil) {
 
         if (game.global.switchToMaps && !game.global.preMapsActive) {
             // skip "waiting for trimps to die"
+            // TODO really?
             mapsClicked();
         }
     }
@@ -626,7 +626,10 @@ window.RedAcesUI.selectMap = function (level) {
     document.getElementById('mapLevelInput').value = level;
 
     // No map found -> try buying
-    document.getElementById('biomeAdvMapsSelect').value = 'Plentiful';
+    document.getElementById('biomeAdvMapsSelect').value     = 'Plentiful';
+    document.getElementById('lootAdvMapsRange').value       = 9;
+    document.getElementById('sizeAdvMapsRange').value       = 9;
+    document.getElementById('difficultyAdvMapsRange').value = 9;
     adjustMap('loot', 9);
     adjustMap('size', 9);
     adjustMap('difficulty', 9);
@@ -790,7 +793,7 @@ window.RedAcesUI.autoPlay = function() {
         targetFormation = 4; // Scryer
 
     if (((mapObj !== undefined) && (mapObj.location === 'Void'))
-        || ((mapObj === undefined) && (game.global.world === 200) && (game.global.spireActive))
+        || ((mapObj === undefined) && (game.global.spireActive))
     ) {
         targetFormation = 2; // Dominance
     }
@@ -807,12 +810,42 @@ window.RedAcesUI.autoPlay = function() {
     }
 
     // Auto run Maps
-    var infoDamageSpan = document.getElementById('RedAcesUIAutoPlayInfoDamage');
+    var infoEnemySpan  = document.getElementById('RedAcesUIAutoPlayInfoEnemy'),
+        infoDamageSpan = document.getElementById('RedAcesUIAutoPlayInfoDamage'),
+        infoTargetSpan = document.getElementById('RedAcesUIAutoPlayInfoTarget'),
+        numHits        = window.RedAcesUI.getNumberOfHitsToKillEnemy(),
+        targetNumHits  = 1,
+        enemyText      = 'c99 ' + opt.targetEnemy;
 
-    if (game.global.world < (opt.voidMapZone - 5)) {
+    if (game.global.spireActive) {
+        numHits       = getSpireStats(opt.targetSpireCell, opt.targetEnemy, 'health') / window.RedAcesUI.getTrimpsMinDamage();
+        if (game.global.formation == 4) {
+            // Switch from Scryer to Dominance
+            numHits /= 8;
+        } else if (game.global.formation == 0) {
+            // Switch from X to Dominance
+            numHits /= 4;
+        }
+        targetNumHits = 4;
+        enemyText     = 'c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
+    } else if (game.global.world == opt.voidMapZone) {
+        // "Pit" Void Map (450 % Difficulty and 10% Map Bonus)
+        numHits       = window.RedAcesUI.getNumberOfHitsToKillEnemy() * 5.5 * 1.1;
+
+        var corruptionStart = 150; // Not the actual start
+        if (game.global.challengeActive == 'Corrupted') {
+            corruptionStart = 1; // Not the actual start
+        }
+
+        // Apply "Void Corruption"
+        numHits      *= 10 * Math.pow(1.05, Math.floor((game.global.world - corruptionStart) / 6)) / 2;
+        enemyText     = 'c99 Void ' + opt.targetEnemy
+    } else if (game.global.world < opt.overkillUntilZone) {
         var overkillDamagePlus = window.RedAcesUI.getOverkillDamagePlus();
         if (infoDamageSpan) {
-            infoDamageSpan.innerHTML = 'OK-Damage: ' + prettify(overkillDamagePlus);
+            infoEnemySpan.innerHTML  = enemyText;
+            infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus);
+            infoTargetSpan.innerHTML = 'Target: > 0';
         }
 
         if ((overkillDamagePlus < 0) && (mapObj === undefined) && (game.global.lastClearedCell > 0)) {
@@ -836,38 +869,10 @@ window.RedAcesUI.autoPlay = function() {
         return;
     }
 
-    var numHits       = window.RedAcesUI.getNumberOfHitsToKillEnemy(),
-        targetNumHits = 1,
-        enemyText     = 'c99 ' + opt.targetEnemy;
-
-    if (game.global.spireActive) {
-        numHits       = getSpireStats(opt.targetSpireCell, opt.targetEnemy, 'health') / window.RedAcesUI.getTrimpsMinDamage();
-        if (game.global.formation == 4) {
-            // Switch from Scryer to Dominance
-            numHits /= 8;
-        } else if (game.global.formation == 0) {
-            // Switch from X to Dominance
-            numHits /= 4;
-        }
-        targetNumHits = 4;
-        enemyText     = 'c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
-    } else if (game.global.world > (opt.endZone - 5)) {
-        targetNumHits = 2;
-    } else if (game.global.world == opt.voidMapZone) {
-        numHits      *= 5.5 * 1.1; // "Pit" Void Map (450 % Difficulty and 10% Map Bonus)
-
-        var corruptionStart = 150; // Not the actual start
-        if (game.global.challengeActive == 'Corrupted') {
-            corruptionStart = 1; // Not the actual start
-        }
-
-        // Apply "Void Corruption"
-        numHits      *= 10 * Math.pow(1.05, Math.floor((game.global.world - corruptionStart) / 6)) / 2;
-        enemyText     = 'c99 Void ' + opt.targetEnemy
-    }
-
     if (infoDamageSpan) {
-        infoDamageSpan.innerHTML = 'Hits / ' + enemyText + ': ' + prettify(numHits);
+        infoEnemySpan.innerHTML  = enemyText;
+        infoDamageSpan.innerHTML = 'Hits: ' + prettify(numHits);
+        infoTargetSpan.innerHTML = 'Target: ' + targetNumHits;
     }
 
     if ((numHits > targetNumHits) && (mapObj === undefined)) {
@@ -883,6 +888,12 @@ window.RedAcesUI.autoPlay = function() {
 
     if ((numHits <= targetNumHits) && (mapObj !== undefined) && game.global.repeatMap) {
         // less than xx hit per enemy, in map and "repeat on"
+
+        if (game.global.spireActive && (addSpecials(true, true, null, true).length > 0)) {
+            // Special case: spire and prestiges left -> dont stop repeating just yet...
+            return;
+        }
+
         message(
             'RA:autoPlay(): stop z' + game.global.world + ' maps, need ' + prettify(numHits) + ' hits per '
             + enemyText + ' (target: <= ' + targetNumHits + ')',
@@ -1079,10 +1090,14 @@ window.RedAcesUI.displayOptions = function() {
         var infoDiv             = document.createElement('div');
         infoDiv.className       = 'battleSideBtnContainer';
         infoDiv.id              = 'RedAcesUIAutoPlayInfo';
-        infoDiv.innerHTML       = 'AutoPlay Info<br/><span id="RedAcesUIAutoPlayInfoDamage">-</span>';
-        infoDiv.style.padding   = '2px 5px';
-        infoDiv.style.border    = '1px solid black';
-        infoDiv.style.textAlign = 'center';
+        infoDiv.innerHTML       = '<strong>AutoPlay Info</strong>'
+            + '<br/><span id="RedAcesUIAutoPlayInfoEnemy"></span>'
+            + '<br/><span id="RedAcesUIAutoPlayInfoDamage"></span>'
+            + '<br/><span id="RedAcesUIAutoPlayInfoTarget"></span>';
+        infoDiv.style.padding      = '2px 5px';
+        infoDiv.style.border       = '1px solid black';
+        infoDiv.style.borderRadius = '2px';
+        infoDiv.style.textAlign    = 'center';
 
         if (!window.RedAcesUI.options.autoPlay.enabled) {
             infoDiv.style.display = 'none';
