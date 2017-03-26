@@ -62,11 +62,12 @@ window.RedAcesUI.options = {
         "worldLevel":   179
     },
     "autoPlay": {
-        "enabled":             true,
-        "voidMapZone":          190,
-        "endZone":              210,
-        "buyGolden":       'Helium',
-        "targetSpireCell":       70
+        "enabled":               true,
+        "voidMapZone":            190,
+        "endZone":                210,
+        "buyGolden":         'Helium',
+        "targetEnemy":     'Turtlimp',
+        "targetSpireCell":         61
     }
 };
 
@@ -708,7 +709,7 @@ window.RedAcesUI.dummyEnemyLevel  = 0;
 
 /** get the HP of an enemy dummy */
 window.RedAcesUI.getDummyEnemyHealth = function () {
-    var health = game.global.getEnemyHealth(99, 'Turtlimp');
+    var health = game.global.getEnemyHealth(99, window.RedAcesUI.options.autoPlay.targetEnemy);
 
     if (game.global.world > 5 && game.global.mapsActive) {
         // Maps have 10 % higher stats, we need to offset this
@@ -805,32 +806,15 @@ window.RedAcesUI.autoPlay = function() {
         window.RedAcesUI.setGeneticistAssist(30, 'RA:autoPlay():');
     }
 
-    var numHits = window.RedAcesUI.getNumberOfHitsToKillEnemy();
-
     // Auto run Maps
-
-    if (game.global.world == opt.voidMapZone) {
-        // TODO Calc if we're one hitting the void map enemies
-        if (mapObj === undefined) {
-            if (addSpecials(true, true, null, true).length > 0) {
-                // We're in the voidMapZone and have prestiges left to farm!!
-                message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of void maps!)', 'Notices');
-                window.RedAcesUI.runNewMap(2); // Repeat for items
-                return;
-            }
-
-            if (game.global.totalVoidMaps > 0) {
-                // We're ready for the voids!
-                message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
-                window.RedAcesUI.runVoidMaps();
-                return;
-            }
-        }
-        return;
-    }
+    var infoDamageSpan = document.getElementById('RedAcesUIAutoPlayInfoDamage');
 
     if (game.global.world < (opt.voidMapZone - 5)) {
         var overkillDamagePlus = window.RedAcesUI.getOverkillDamagePlus();
+        if (infoDamageSpan) {
+            infoDamageSpan.innerHTML = 'OK-Damage: ' + prettify(overkillDamagePlus);
+        }
+
         if ((overkillDamagePlus < 0) && (mapObj === undefined) && (game.global.lastClearedCell > 0)) {
             // More than 1 hit per enemy and in no map
             message(
@@ -850,32 +834,69 @@ window.RedAcesUI.autoPlay = function() {
             return;
         }
         return;
-    } else { // game.global.world > (opt.voidMapZone - 5)
-        var targetNumHits = 1;
-        if (game.global.spireActive) {
-            numHits       = getSpireStats(opt.targetSpireCell, 'Turtlimp', 'Health') / window.RedAcesUI.getTrimpsMinDamage();
-            targetNumHits = 4;
-        } else if (game.global.world > (opt.endZone - 5)) {
-            targetNumHits = 2;
+    }
+
+    var numHits       = window.RedAcesUI.getNumberOfHitsToKillEnemy(),
+        targetNumHits = 1,
+        enemyText     = 'c99 ' + opt.targetEnemy;
+
+    if (game.global.spireActive) {
+        numHits       = getSpireStats(opt.targetSpireCell, opt.targetEnemy, 'health') / window.RedAcesUI.getTrimpsMinDamage();
+        if (game.global.formation == 4) {
+            // Switch from Scryer to Dominance
+            numHits /= 8;
+        } else if (game.global.formation == 0) {
+            // Switch from X to Dominance
+            numHits /= 4;
+        }
+        targetNumHits = 4;
+        enemyText     = 'c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
+    } else if (game.global.world > (opt.endZone - 5)) {
+        targetNumHits = 2;
+    } else if (game.global.world == opt.voidMapZone) {
+        numHits      *= 5.5 * 1.1; // "Pit" Void Map (450 % Difficulty and 10% Map Bonus)
+
+        var corruptionStart = 150; // Not the actual start
+        if (game.global.challengeActive == 'Corrupted') {
+            corruptionStart = 1; // Not the actual start
         }
 
-        if ((numHits > targetNumHits) && (mapObj === undefined)) {
-            // More than xx hit per enemy and in no map
-            message(
-                'RA:autoPlay(): running z' + game.global.world + ' maps to farm because we need '
-                + prettify(numHits) + ' hits per c99 Turtlimp',
-                'Notices'
-            );
-            window.RedAcesUI.runNewMap(0); // Repeat forever
-        } else if ((numHits <= targetNumHits) && (mapObj !== undefined) && game.global.repeatMap) {
-            // less than 1 hit per enemy, in map and "repeat on"
-            message(
-                'RA:autoPlay(): stop running z' + game.global.world + ' maps to farm because we need '
-                + prettify(numHits) + ' hits per c99 Turtlimp',
-                'Notices'
-            );
-            repeatClicked();
-        }
+        // Apply "Void Corruption"
+        numHits      *= 10 * Math.pow(1.05, Math.floor((game.global.world - corruptionStart) / 6)) / 2;
+        enemyText     = 'c99 Void ' + opt.targetEnemy
+    }
+
+    if (infoDamageSpan) {
+        infoDamageSpan.innerHTML = 'Hits / ' + enemyText + ': ' + prettify(numHits);
+    }
+
+    if ((numHits > targetNumHits) && (mapObj === undefined)) {
+        // More than xx hit per enemy and in no map
+        message(
+            'RA:autoPlay(): run z' + game.global.world + ' maps, need ' + prettify(numHits) + ' hits per '
+            + enemyText + ' (target: <= ' + targetNumHits + ')',
+            'Notices'
+        );
+        window.RedAcesUI.runNewMap(0); // Repeat forever
+        return;
+    }
+
+    if ((numHits <= targetNumHits) && (mapObj !== undefined) && game.global.repeatMap) {
+        // less than xx hit per enemy, in map and "repeat on"
+        message(
+            'RA:autoPlay(): stop z' + game.global.world + ' maps, need ' + prettify(numHits) + ' hits per '
+            + enemyText + ' (target: <= ' + targetNumHits + ')',
+            'Notices'
+        );
+        repeatClicked();
+        return;
+    }
+
+    if ((game.global.world == opt.voidMapZone) && (game.global.totalVoidMaps > 0) && (mapObj === undefined)) {
+        // We're ready for the voids!
+        // TODO Toggle "Finish all Voids"
+        message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
+        window.RedAcesUI.runVoidMaps();
         return;
     }
 };
@@ -935,7 +956,14 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
 
 /** init main loop */
 
+window.RedAcesUI.inProcess = false;
+
 window.RedAcesUI.mainLoop = function() {
+    if (window.RedAcesUI.inProcess) {
+        return;
+    }
+    window.RedAcesUI.inProcess = true;
+
     document.title = 'Trimps z' + game.global.world + '-' + (game.global.lastClearedCell + 2);
     if (getAvailableGoldenUpgrades() > 0) {
         document.title = 'GOLDEN ' + document.title;
@@ -948,7 +976,7 @@ window.RedAcesUI.mainLoop = function() {
     window.RedAcesUI.autoPause();
     window.RedAcesUI.autoPlay();
 
-    document.getElementById('metalPs').innerHTML.substring(1, document.getElementById('metalPs').innerHTML.length - 4)
+    window.RedAcesUI.inProcess = false;
 };
 
 window.RedAcesUI.mainTimer = setInterval(
@@ -967,6 +995,17 @@ window.RedAcesUI.toggleAutomation = function (what) {
     } else {
         button.className = button.className.replace('colorSuccess', 'colorDanger');
         button.className = button.className.replace('btn-success', 'btn-danger');
+    }
+
+    if (what == 'autoPlay') {
+        var autoPlayInfoDiv = document.getElementById('RedAcesUIAutoPlayInfo');
+        if (autoPlayInfoDiv) {
+            if (window.RedAcesUI.options[what].enabled) {
+                autoPlayInfoDiv.style.display = 'block';
+            } else {
+                autoPlayInfoDiv.style.display = 'none';
+            }
+        }
     }
 };
 
@@ -1015,20 +1054,41 @@ window.RedAcesUI.displayOptions = function() {
     // Auto Play
     var battleBtnsColumn = document.getElementById('battleBtnsColumn');
     if (battleBtnsColumn) {
-        var button  = document.createElement('span'),
-            wrapper = document.createElement('div');
+        // Toggle auto play
+        var toggleBtn        = document.createElement('span'),
+            toggleBtnWrapper = document.createElement('div');
 
-        button.className = 'btn btn-success fightBtn';
-        button.id        = 'RedAcesUIOpt' + 'autoPlay';
-        button.innerHTML = 'AutoPlay';
-        button.onclick      = function () {
+        if (window.RedAcesUI.options.autoPlay.enabled) {
+            toggleBtn.className = 'btn btn-success fightBtn';
+        } else {
+            toggleBtn.className = 'btn btn-danger fightBtn';
+        }
+
+        toggleBtn.id        = 'RedAcesUIOpt' + 'autoPlay';
+        toggleBtn.innerHTML = 'AutoPlay';
+        toggleBtn.onclick   = function () {
             window.RedAcesUI.toggleAutomation('autoPlay');
         };
 
-        wrapper.className = 'battleSideBtnContainer';
+        toggleBtnWrapper.className = 'battleSideBtnContainer';
 
-        wrapper.appendChild(button);
-        battleBtnsColumn.appendChild(wrapper);
+        toggleBtnWrapper.appendChild(toggleBtn);
+        battleBtnsColumn.appendChild(toggleBtnWrapper);
+
+        // Display info
+        var infoDiv             = document.createElement('div');
+        infoDiv.className       = 'battleSideBtnContainer';
+        infoDiv.id              = 'RedAcesUIAutoPlayInfo';
+        infoDiv.innerHTML       = 'AutoPlay Info<br/><span id="RedAcesUIAutoPlayInfoDamage">-</span>';
+        infoDiv.style.padding   = '2px 5px';
+        infoDiv.style.border    = '1px solid black';
+        infoDiv.style.textAlign = 'center';
+
+        if (!window.RedAcesUI.options.autoPlay.enabled) {
+            infoDiv.style.display = 'none';
+        }
+
+        battleBtnsColumn.appendChild(infoDiv);
     }
 };
 
