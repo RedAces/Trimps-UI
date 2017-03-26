@@ -403,6 +403,10 @@ window.RedAcesUI.autoHireTrimps = function() {
             jobEmployees       = game.jobs[jobName].owned,
             targetJobEmployees = Math.floor(maxWorkerTrimps * jobRatio / jobRatioSum);
 
+        if ((jobName == 'Farmer') && (targetJobEmployees > 100)) {
+            targetJobEmployees -= 100;
+        }
+
         window.RedAcesUI.hire(jobName, Math.floor(targetJobEmployees - jobEmployees));
     }
 };
@@ -771,7 +775,7 @@ window.RedAcesUI.autoPlay = function() {
     }
 
     if (getAvailableGoldenUpgrades() > 0) {
-        message('RA:autoPlay(): buying Golden Helium', 'Notices');
+        message('RA:autoPlay(): buying Golden ' + opt.buyGolden, 'Notices');
         buyGoldenUpgrade(opt.buyGolden);
     }
 
