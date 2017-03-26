@@ -41,9 +41,9 @@ window.RedAcesUI.options = {
         }
     },
     "autoHireTrimps": {
-        "enabled":         1,
-        "fireAllForVoids": 1,
-        "startWorldZone":  5
+        "enabled":         true,
+        "fireAllForVoids":    1,
+        "startWorldZone":     5
     },
     "autoGather": {
         "enabled": true
@@ -624,6 +624,7 @@ window.RedAcesUI.selectMap = function (level) {
     document.getElementById('mapLevelInput').value = level;
 
     // No map found -> try buying
+    document.getElementById('biomeAdvMapsSelect').value = 'Plentiful';
     adjustMap('loot', 9);
     adjustMap('size', 9);
     adjustMap('difficulty', 9);
