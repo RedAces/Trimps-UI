@@ -62,10 +62,11 @@ window.RedAcesUI.options = {
         "worldLevel":   179
     },
     "autoPlay": {
-        "enabled":         true,
-        "voidMapZone":      190,
-        "endZone":          210,
-        "buyGolden":   'Helium'
+        "enabled":             true,
+        "voidMapZone":          190,
+        "endZone":              210,
+        "buyGolden":       'Helium',
+        "targetSpireCell":       70
     }
 };
 
@@ -727,6 +728,11 @@ window.RedAcesUI.getDummyEnemyHealth = function () {
     return window.RedAcesUI.dummyEnemyHealth;
 };
 
+/** Returns the min damage of your trimps */
+window.RedAcesUI.getTrimpsMinDamage = function() {
+    return 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0];
+};
+
 /** sets the timer of the Geneticist Assist to seconds */
 window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
     if (!game.jobs.Geneticist.locked && (game.global.GeneticistassistSetting != seconds)) {
@@ -743,9 +749,7 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
 
 /** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
 window.RedAcesUI.getNumberOfHitsToKillEnemy = function() {
-    var trimpMinDamage = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0];
-
-    return window.RedAcesUI.getDummyEnemyHealth() / trimpMinDamage;
+    return window.RedAcesUI.getDummyEnemyHealth() / window.RedAcesUI.getTrimpsMinDamage();
 };
 
 /**
@@ -755,7 +759,7 @@ window.RedAcesUI.getNumberOfHitsToKillEnemy = function() {
  * if its < 0  -> no overkill!
  */
 window.RedAcesUI.getOverkillDamagePlus = function() {
-    var trimpMinDamage = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0],
+    var trimpMinDamage = window.RedAcesUI.getTrimpsMinDamage(),
         enemyHealth    = window.RedAcesUI.getDummyEnemyHealth(),
         trampleDamage  = trimpMinDamage - enemyHealth;
 
@@ -805,25 +809,6 @@ window.RedAcesUI.autoPlay = function() {
 
     // Auto run Maps
 
-    if (game.global.spireActive) {
-        // TODO Calc if we're one hitting the spire enemies: getSpireStats(cellNum, name, 'Health')
-        if (mapObj === undefined) {
-            if (addSpecials(true, true, null, true).length > 0) {
-                // We're in the spire and have prestiges left to farm!!
-                message('RA:autoPlay(): running z' + game.global.world + ' maps for all prestiges (bc of spire!)', 'Notices');
-                window.RedAcesUI.runNewMap(2); // Repeat for items
-                return;
-            }
-            if (game.global.mapBonus < 10) {
-                // We're in the spire and have prestiges left to farm!!
-                message('RA:autoPlay(): running z' + game.global.world + ' maps for stacking damage bonus', 'Notices');
-                window.RedAcesUI.runNewMap(1); // Repeat to 10
-                return;
-            }
-        }
-        return;
-    }
-
     if (game.global.world == opt.voidMapZone) {
         // TODO Calc if we're one hitting the void map enemies
         if (mapObj === undefined) {
@@ -849,8 +834,8 @@ window.RedAcesUI.autoPlay = function() {
         if ((overkillDamagePlus < 0) && (mapObj === undefined) && (game.global.lastClearedCell > 0)) {
             // More than 1 hit per enemy and in no map
             message(
-                'RA:autoPlay(): running z' + game.global.world + ' maps to farm because we need '
-                + prettify(Math.abs(overkillDamagePlus)) + ' more damage to overkill things',
+                'RA:autoPlay(): run z' + game.global.world + ' maps, need ' + prettify(Math.abs(overkillDamagePlus))
+                + ' damage to Overkill',
                 'Notices'
             );
             window.RedAcesUI.runNewMap(0); // Repeat forever
@@ -858,8 +843,7 @@ window.RedAcesUI.autoPlay = function() {
         } else if ((overkillDamagePlus >= 0) && (mapObj !== undefined) && game.global.repeatMap) {
             // less than 1 hit per enemy, in map and "repeat on"
             message(
-                'RA:autoPlay(): stop running z' + game.global.world + ' maps to farm because we have '
-                + prettify(overkillDamagePlus) + ' too much damage after overkilling things',
+                'RA:autoPlay(): stop z' + game.global.world + ' maps',
                 'Notices'
             );
             repeatClicked();
@@ -868,12 +852,15 @@ window.RedAcesUI.autoPlay = function() {
         return;
     } else { // game.global.world > (opt.voidMapZone - 5)
         var targetNumHits = 1;
-        if (game.global.world > (opt.endZone - 5)) {
+        if (game.global.spireActive) {
+            numHits       = getSpireStats(opt.targetSpireCell, 'Turtlimp', 'Health') / window.RedAcesUI.getTrimpsMinDamage();
+            targetNumHits = 4;
+        } else if (game.global.world > (opt.endZone - 5)) {
             targetNumHits = 2;
         }
 
         if ((numHits > targetNumHits) && (mapObj === undefined)) {
-            // More than 1 hit per enemy and in no map
+            // More than xx hit per enemy and in no map
             message(
                 'RA:autoPlay(): running z' + game.global.world + ' maps to farm because we need '
                 + prettify(numHits) + ' hits per c99 Turtlimp',
@@ -975,9 +962,11 @@ window.RedAcesUI.toggleAutomation = function (what) {
     window.RedAcesUI.options[what].enabled = !window.RedAcesUI.options[what].enabled;
     var button = document.getElementById('RedAcesUIOpt' + what);
     if (window.RedAcesUI.options[what].enabled) {
-        button.className = 'pointer noselect colorSuccess';
+        button.className = button.className.replace('colorSuccess', 'colorDanger');
+        button.className = button.className.replace('btn-danger', 'btn-success');
     } else {
-        button.className = 'pointer noselect colorDanger';
+        button.className = button.className.replace('colorSuccess', 'colorDanger');
+        button.className = button.className.replace('btn-success', 'btn-danger');
     }
 };
 
@@ -985,7 +974,11 @@ window.RedAcesUI.toggleAutomation = function (what) {
 window.RedAcesUI.displayOptions = function() {
     var displayButton = function (what, label, where, fullSize) {
         var button          = document.createElement('div');
-        button.className    = 'pointer noselect colorSuccess';
+        if (window.RedAcesUI.options[what].enabled) {
+            button.className = 'pointer noselect colorSuccess';
+        } else {
+            button.className = 'pointer noselect colorDanger';
+        }
         button.innerHTML    = label;
         button.id           = 'RedAcesUIOpt' + what;
         button.onclick      = function () {
@@ -1017,6 +1010,25 @@ window.RedAcesUI.displayOptions = function() {
     var buildingsTitleDiv = document.getElementById('buildingsTitleDiv');
     if (buildingsTitleDiv) {
         displayButton('autoBuild', 'AutoBuild', buildingsTitleDiv.childNodes[1].childNodes[3], true);
+    }
+
+    // Auto Play
+    var battleBtnsColumn = document.getElementById('battleBtnsColumn');
+    if (battleBtnsColumn) {
+        var button  = document.createElement('span'),
+            wrapper = document.createElement('div');
+
+        button.className = 'btn btn-success fightBtn';
+        button.id        = 'RedAcesUIOpt' + 'autoPlay';
+        button.innerHTML = 'AutoPlay';
+        button.onclick      = function () {
+            window.RedAcesUI.toggleAutomation('autoPlay');
+        };
+
+        wrapper.className = 'battleSideBtnContainer';
+
+        wrapper.appendChild(button);
+        battleBtnsColumn.appendChild(wrapper);
     }
 };
 
