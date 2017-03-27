@@ -42,8 +42,7 @@ window.RedAcesUI.options = {
     },
     "autoHireTrimps": {
         "enabled":         true,
-        "fireAllForVoids":    1,
-        "startWorldZone":     5
+        "fireAllForVoids":    1
     },
     "autoGather": {
         "enabled": true
@@ -143,7 +142,7 @@ window.RedAcesUI.displayEfficiency = function () {
         var data = game.equipment[itemName],
             gain;
 
-        if ((data.locked == 1) || data.hasOwnProperty('blockCalculated')) {
+        if (data.locked || data.hasOwnProperty('blockCalculated')) {
             continue;
         }
 
@@ -165,7 +164,7 @@ window.RedAcesUI.displayEfficiency = function () {
             cost         = window.RedAcesUI.calcCost(data.cost[resource], data.level) * costMult,
             costPerValue = cost / gain;
 
-        if ((resource != 'metal') || (gain == 0)) {
+        if ((resource !== 'metal') || (gain == 0)) {
             continue;
         }
 
@@ -188,7 +187,7 @@ window.RedAcesUI.displayEfficiency = function () {
 
         itemPrestiges[upgradeData.prestiges] = upgradeData;
 
-        if ((upgradeData.locked == 1)
+        if (upgradeData.locked
             || !upgradeData.hasOwnProperty('cost')
             || !upgradeData.cost.hasOwnProperty('resources')
             || !upgradeData.cost.resources.hasOwnProperty('metal')
@@ -285,7 +284,7 @@ window.RedAcesUI.displayEfficiency = function () {
 
     // Special case: Shield
     if (game.equipment.hasOwnProperty('Shield')
-        && (game.equipment.Shield.locked == 0)
+        && !game.equipment.Shield.locked
         && (game.equipment.Shield.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable)
         && (game.global.hasOwnProperty('autoPrestiges'))
         && (game.global.autoPrestiges == 1) // Auto-Prestige "all"
@@ -341,36 +340,37 @@ window.RedAcesUI.autoHireTrimps = function() {
         return;
     }
 
-    var mapObj = getCurrentMapObject();
-    if (game.global.world < window.RedAcesUI.options.autoHireTrimps.startWorldZone) {
-        return;
-    } else if ((mapObj !== undefined)
-        && (mapObj.location == "Void")
+    var mapObj = getCurrentMapObject(),
+        jobRatios,
+        jobRatioSum;
+
+    if ((mapObj !== undefined)
+        && (mapObj.location === "Void")
         && window.RedAcesUI.options.autoHireTrimps.fireAllForVoids
     ) {
-        var jobRatios = {
-                "Miner":      0,
-                "Lumberjack": 0,
-                "Farmer":     0,
-                "Scientist":  0
-            },
-            jobRatioSum = 1;
+        jobRatios = {
+            "Miner":      0,
+            "Lumberjack": 0,
+            "Farmer":     0,
+            "Scientist":  0
+        };
+        jobRatioSum = 1;
     } else if (game.global.world <= 150) {
-        var jobRatios   = {
-                "Miner":      100,
-                "Lumberjack": 100,
-                "Farmer":      10,
-                "Scientist":    1
-            },
-            jobRatioSum = 211;
+        jobRatios   = {
+            "Miner":      100,
+            "Lumberjack": 100,
+            "Farmer":      10,
+            "Scientist":    1
+        };
+        jobRatioSum = 211;
     } else {
-        var jobRatios   = {
-                "Miner":      100,
-                "Lumberjack":  50,
-                "Farmer":      10,
-                "Scientist":    0
-            },
-            jobRatioSum = 160;
+        jobRatios   = {
+            "Miner":      100,
+            "Lumberjack":  50,
+            "Farmer":      10,
+            "Scientist":    0
+        };
+        jobRatioSum = 160;
     }
 
     if (!game.jobs.hasOwnProperty('Miner') || game.jobs.Miner.locked) {
@@ -404,7 +404,7 @@ window.RedAcesUI.autoHireTrimps = function() {
             jobEmployees       = game.jobs[jobName].owned,
             targetJobEmployees = Math.floor(maxWorkerTrimps * jobRatio / jobRatioSum);
 
-        if ((jobName == 'Farmer') && (targetJobEmployees > 100)) {
+        if ((jobName === 'Farmer') && (targetJobEmployees > 100)) {
             targetJobEmployees -= 100;
         }
 
@@ -460,7 +460,7 @@ window.RedAcesUI.autoBuild = function() {
 
         if (currentWarpstation < warpstationLimit) {
             window.RedAcesUI.build('Warpstation', warpstationLimit - currentWarpstation);
-        } else if (game.upgrades.Gigastation.locked == 0) {
+        } else if (!game.upgrades.Gigastation.locked) {
             buyUpgrade('Gigastation', true, true);
         }
     }
@@ -494,11 +494,6 @@ window.RedAcesUI.autoBuild = function() {
             );
 
         if (buildingCost / otherCost <= cheapBuildingData.relation) {
-            // console.debug(
-            //     'Buying 1 ' + buildingName + ' because the relation of ' + cheapBuildingData.resource + ' to '
-            //     + cheapBuildingData.otherBuilding + ' is ' + buildingCost / otherCost
-            //     + ', which is less than ' + cheapBuildingData.relation
-            // );
             window.RedAcesUI.build(buildingName, 1);
         }
     }
@@ -559,7 +554,7 @@ window.RedAcesUI.autoPause = function() {
         return;
     }
 
-    if (game.global.world >= RedAcesUI.options.autoPause.worldLevel && (game.options.menu.pauseGame.enabled == 0)) {
+    if (game.global.world >= RedAcesUI.options.autoPause.worldLevel && !game.options.menu.pauseGame.enabled) {
         toggleSetting('pauseGame');
     }
 };
@@ -660,7 +655,7 @@ window.RedAcesUI.runVoidMaps = function() {
         return 'already running a map';
     }
 
-    if (game.global.totalVoidMaps == 0) {
+    if (game.global.totalVoidMaps <= 0) {
         // There are no void maps
         return 'no void maps';
     }
@@ -698,7 +693,7 @@ window.RedAcesUI.runVoidMaps = function() {
             continue;
         }
         var map = game.global.mapsOwnedArray[i];
-        if (map.location == 'Void') {
+        if (map.location === 'Void') {
             // Found one! Run it and all is good!
             selectMap(map.id);
             runMap();
@@ -740,7 +735,7 @@ window.RedAcesUI.getTrimpsMinDamage = function() {
 /** sets the timer of the Geneticist Assist to seconds */
 window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
     if (!game.jobs.Geneticist.locked && (game.global.GeneticistassistSetting != seconds)) {
-        if (game.global.GeneticistassistSteps.indexOf(seconds) == -1) {
+        if (game.global.GeneticistassistSteps.indexOf(seconds) === -1) {
             game.global.GeneticistassistSteps = [-1, 1, 10, seconds];
         }
 
@@ -773,8 +768,19 @@ window.RedAcesUI.getOverkillDamagePlus = function() {
 /** Plays the game for you */
 window.RedAcesUI.autoPlay = function() {
     var opt = window.RedAcesUI.options.autoPlay;
-    if (!opt.enabled || (game.global.world < 10)) {
+    if (!opt.enabled) {
         // nothing to do here
+        return;
+    }
+
+    var infoEnemySpan  = document.getElementById('RedAcesUIAutoPlayInfoEnemy'),
+        infoDamageSpan = document.getElementById('RedAcesUIAutoPlayInfoDamage'),
+        infoTargetSpan = document.getElementById('RedAcesUIAutoPlayInfoTarget');
+
+    if (game.global.world < 10) {
+        infoEnemySpan.innerHTML  = 'Starts at z10';
+        infoDamageSpan.innerHTML = '';
+        infoTargetSpan.innerHTML = '';
         return;
     }
 
@@ -810,10 +816,7 @@ window.RedAcesUI.autoPlay = function() {
     }
 
     // Auto run Maps
-    var infoEnemySpan  = document.getElementById('RedAcesUIAutoPlayInfoEnemy'),
-        infoDamageSpan = document.getElementById('RedAcesUIAutoPlayInfoDamage'),
-        infoTargetSpan = document.getElementById('RedAcesUIAutoPlayInfoTarget'),
-        numHits        = window.RedAcesUI.getNumberOfHitsToKillEnemy(),
+    var numHits        = window.RedAcesUI.getNumberOfHitsToKillEnemy(),
         targetNumHits  = 1,
         enemyText      = 'c99 ' + opt.targetEnemy;
 
@@ -833,7 +836,7 @@ window.RedAcesUI.autoPlay = function() {
         numHits       = window.RedAcesUI.getNumberOfHitsToKillEnemy() * 5.5 * 1.1;
 
         var corruptionStart = 150; // Not the actual start
-        if (game.global.challengeActive == 'Corrupted') {
+        if (game.global.challengeActive === 'Corrupted') {
             corruptionStart = 1; // Not the actual start
         }
 
@@ -926,7 +929,10 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
         gigastationAllowed   = game.upgrades.Gigastation.allowed,
 
         // cost for 1 warpstation at max gigastation
-        warpstationBaseMetalCost = game.buildings.Warpstation.cost.metal[0] * Math.pow(1.75, gigastationAllowed - gigastationCurrent) * window.RedAcesUI.getArtisanistryMult() * window.RedAcesUI.getResourcefulMult(),
+        warpstationBaseMetalCost = game.buildings.Warpstation.cost.metal[0]
+            * Math.pow(1.75, gigastationAllowed - gigastationCurrent)
+            * window.RedAcesUI.getArtisanistryMult()
+            * window.RedAcesUI.getResourcefulMult(),
 
         // Amount of warpstation for 5 minutes worth of metal farming
         targetWarpstationCount   = Math.log(2 * metalPerMinute / warpstationBaseMetalCost) / Math.log(game.buildings.Warpstation.cost.metal[1]),
@@ -1008,7 +1014,7 @@ window.RedAcesUI.toggleAutomation = function (what) {
         button.className = button.className.replace('btn-success', 'btn-danger');
     }
 
-    if (what == 'autoPlay') {
+    if (what === 'autoPlay') {
         var autoPlayInfoDiv = document.getElementById('RedAcesUIAutoPlayInfo');
         if (autoPlayInfoDiv) {
             if (window.RedAcesUI.options[what].enabled) {
