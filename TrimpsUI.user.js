@@ -64,9 +64,10 @@ window.RedAcesUI.options = {
         "enabled":                 true,
         "voidMapZone":              190,
         "overkillUntilZone":        205,
+        "oneshotUntilZone":         215,
         "buyGolden":           'Helium',
         "targetEnemy":       'Turtlimp',
-        "targetSpireCell":           61
+        "targetSpireCell":           80
     }
 };
 
@@ -870,6 +871,8 @@ window.RedAcesUI.autoPlay = function() {
             return;
         }
         return;
+    } else if (game.global.world >= opt.oneshotUntilZone) {
+        targetNumHits = 2;
     }
 
     if (infoDamageSpan) {
