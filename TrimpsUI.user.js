@@ -63,11 +63,11 @@ window.RedAcesUI.options = {
     },
     "autoPlay": {
         "enabled":                  true,
-        "voidMapZone":               190,
-        "overkillUntilZone":         205,
-        "oneshotUntilZone":          215,
-        "scryerUntilZone":           225,
-        "buyGoldenVoidUntil":        170,
+        "voidMapZone":               230,
+        "overkillUntilZone":         215,
+        "oneshotUntilZone":          225,
+        "scryerUntilZone":           230,
+        "buyGoldenVoidUntil":        205,
         "targetEnemy":        'Turtlimp',
         "targetSpireCell":            80,
         "targetSpireNumHits":          8
@@ -762,6 +762,44 @@ window.RedAcesUI.getNumberOfHitsToKillEnemy = function() {
     return window.RedAcesUI.getDummyEnemyHealth() / window.RedAcesUI.getTrimpsMinDamage();
 };
 
+/** Calculations the void corruption multiplicator for the health */
+window.RedAcesUI.getVoidCorruptionHealthMult = function(isVoidEnemy) {
+    var corruptionStart     = 180,
+        corruptionBaseLevel = 150;
+
+    if (game.global.challengeActive === 'Corrupted') {
+        corruptionStart     = 60;
+        corruptionBaseLevel = 1;
+    }
+
+    // Apply "Void Corruption"
+    if (game.global.world >= corruptionStart) {
+        var voidCorruption = 10 * Math.pow(1.05, Math.floor((game.global.world - corruptionBaseLevel) / 6)) / 2;
+        if (isVoidEnemy) {
+            if (game.global.world < 230) {
+                // Before Magma its only half...
+                voidCorruption /= 2;
+            }
+            return voidCorruption;
+        } else { // no void enemy
+            if (game.global.world < 230) {
+                // No Void Corruption for normal map enemies before 230
+                return 1;
+            }
+            return voidCorruption / 2;
+        }
+    } else {
+        return 1;
+    }
+};
+
+/** calculates how much hits your trimps have to do to kill an Void Turtlimp on cell 99 */
+window.RedAcesUI.getNumberOfHitsToKillVoidEnemy = function() {
+    var numHits = window.RedAcesUI.getDummyEnemyHealth() / window.RedAcesUI.getTrimpsMinDamage();
+
+    return numHits * 5.5 * 1.1 * window.RedAcesUI.getVoidCorruptionHealthMult(true);
+};
+
 /**
  * Returns the damage plus after overkilling two trimps
  *
@@ -850,18 +888,8 @@ window.RedAcesUI.autoPlay = function() {
             numHits /= 4;
         }
     } else if (game.global.world == opt.voidMapZone) {
+        numHits       = window.RedAcesUI.getNumberOfHitsToKillVoidEnemy();
         enemyText     = 'c99 Void ' + opt.targetEnemy;
-
-        // "Pit" Void Map (450 % Difficulty and 10% Map Bonus)
-        numHits      *= 5.5 * 1.1;
-
-        var corruptionStart = 150; // Not the actual start
-        if (game.global.challengeActive === 'Corrupted') {
-            corruptionStart = 1; // Not the actual start
-        }
-
-        // Apply "Void Corruption"
-        numHits      *= 10 * Math.pow(1.05, Math.floor((game.global.world - corruptionStart) / 6)) / 2;
 
         if (game.global.formation == 4) {
             // Switch from Scryer to Dominance
