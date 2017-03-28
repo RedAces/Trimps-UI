@@ -830,7 +830,7 @@ window.RedAcesUI.autoPlay = function() {
             // Switch from X to Dominance
             numHits /= 4;
         }
-        targetNumHits = 4;
+        targetNumHits = 8;
         enemyText     = 'c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
     } else if (game.global.world == opt.voidMapZone) {
         // "Pit" Void Map (450 % Difficulty and 10% Map Bonus)
