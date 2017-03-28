@@ -68,7 +68,8 @@ window.RedAcesUI.options = {
         "scryerUntilZone":          225,
         "buyGolden":           'Helium',
         "targetEnemy":       'Turtlimp',
-        "targetSpireCell":           80
+        "targetSpireCell":           80,
+        "targetSpireNumHits":         8
     }
 };
 
@@ -824,6 +825,8 @@ window.RedAcesUI.autoPlay = function() {
         enemyText      = 'c99 ' + opt.targetEnemy;
 
     if (game.global.spireActive) {
+        targetNumHits = opt.targetSpireNumHits;
+        enemyText     = 'c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
         numHits       = getSpireStats(opt.targetSpireCell, opt.targetEnemy, 'health') / window.RedAcesUI.getTrimpsMinDamage();
         if (game.global.formation == 4) {
             // Switch from Scryer to Dominance
@@ -832,8 +835,6 @@ window.RedAcesUI.autoPlay = function() {
             // Switch from X to Dominance
             numHits /= 4;
         }
-        targetNumHits = 8;
-        enemyText     = 'c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
     } else if (game.global.world == opt.voidMapZone) {
         enemyText     = 'c99 Void ' + opt.targetEnemy;
 
