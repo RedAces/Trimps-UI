@@ -36,7 +36,8 @@ window.RedAcesUI.options = {
             "Nursery": {
                 "otherBuilding":         "Gym",
                 "resource":             "wood",
-                "relation":                0.1
+                "relation":                0.1,
+                "untilWorldZone":          200
             }
         }
     },
@@ -61,15 +62,15 @@ window.RedAcesUI.options = {
         "worldLevel":   179
     },
     "autoPlay": {
-        "enabled":                 true,
-        "voidMapZone":              190,
-        "overkillUntilZone":        205,
-        "oneshotUntilZone":         215,
-        "scryerUntilZone":          225,
-        "buyGolden":           'Helium',
-        "targetEnemy":       'Turtlimp',
-        "targetSpireCell":           80,
-        "targetSpireNumHits":         8
+        "enabled":                  true,
+        "voidMapZone":               190,
+        "overkillUntilZone":         205,
+        "oneshotUntilZone":          215,
+        "scryerUntilZone":           225,
+        "buyGoldenVoidUntil":        170,
+        "targetEnemy":        'Turtlimp',
+        "targetSpireCell":            80,
+        "targetSpireNumHits":          8
     }
 };
 
@@ -338,8 +339,8 @@ window.RedAcesUI.autoHireTrimps = function() {
         return;
     }
 
-    if (game.resources.trimps.owned / game.resources.trimps.realMax() < 0.5) {
-        // dont hire anyone if we've got less than half the amount of trimps
+    if (game.resources.trimps.owned / game.resources.trimps.realMax() < 0.75) {
+        // dont hire anyone if we've got less than 75 % of the max amount of trimps
         return;
     }
 
@@ -475,8 +476,15 @@ window.RedAcesUI.autoBuild = function() {
         ) {
             continue;
         }
+
         var cheapBuildingData = window.RedAcesUI.options.autoBuild.cheapBuildings[buildingName],
             otherBuildingName = cheapBuildingData.otherBuilding;
+
+        if (cheapBuildingData.hasOwnProperty('untilWorldZone')
+            && (game.global.world > cheapBuildingData.untilWorldZone)
+        ) {
+            continue;
+        }
 
         if (!game.buildings.hasOwnProperty(otherBuildingName)
             || game.buildings[otherBuildingName].locked
@@ -793,8 +801,14 @@ window.RedAcesUI.autoPlay = function() {
     }
 
     if (getAvailableGoldenUpgrades() > 0) {
-        message('RA:autoPlay(): buying Golden ' + opt.buyGolden, 'Notices');
-        buyGoldenUpgrade(opt.buyGolden);
+        var what;
+        if (game.global.world <= opt.buyGoldenVoidUntil) {
+            what = 'Void';
+        } else {
+            what = 'Helium';
+        }
+        message('RA:autoPlay(): buying Golden ' + what, 'Notices');
+        buyGoldenUpgrade(what);
     }
 
     // Auto-Stance
@@ -813,7 +827,7 @@ window.RedAcesUI.autoPlay = function() {
         setFormation(targetFormation)
     }
 
-    if (game.global.world < (opt.voidMapZone - 1)) {
+    if ((game.global.world < (opt.voidMapZone - 1)) && !game.global.spireActive) {
         window.RedAcesUI.setGeneticistAssist(10, 'RA:autoPlay():');
     } else {
         window.RedAcesUI.setGeneticistAssist(30, 'RA:autoPlay():');
