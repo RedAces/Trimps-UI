@@ -899,20 +899,19 @@ window.RedAcesUI.autoPlay = function() {
         return;
     }
 
-    if ((numHits <= targetNumHits) && (mapObj !== undefined) && game.global.repeatMap) {
-        // less than xx hit per enemy, in map and "repeat on"
+    if ((numHits <= targetNumHits) && (mapObj !== undefined)) {
+        // less than xx hit per enemy and in map
 
-        if (game.global.spireActive && (addSpecials(true, true, null, true).length > 0)) {
+        if (game.global.repeatMap && !(game.global.spireActive && (addSpecials(true, true, null, true).length > 0))) {
+            // "Repeat on" and we're NOT in the spire with prestiges left
             // Special case: spire and prestiges left -> dont stop repeating just yet...
-            return;
+            message(
+                'RA:autoPlay(): stop z' + game.global.world + ' maps, need ' + prettify(numHits) + ' hits per '
+                + enemyText + ' (target: <= ' + targetNumHits + ')',
+                'Notices'
+            );
+            repeatClicked();
         }
-
-        message(
-            'RA:autoPlay(): stop z' + game.global.world + ' maps, need ' + prettify(numHits) + ' hits per '
-            + enemyText + ' (target: <= ' + targetNumHits + ')',
-            'Notices'
-        );
-        repeatClicked();
         return;
     }
 
