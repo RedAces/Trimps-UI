@@ -908,7 +908,7 @@ window.RedAcesUI.autoPlay = function() {
             // More than 1 hit per enemy and in no map
             message(
                 'RA:autoPlay(): run z' + game.global.world + ' maps, need ' + prettify(Math.abs(overkillDamagePlus))
-                + ' damage to Overkill',
+                + ' more damage to Overkill',
                 'Notices'
             );
             window.RedAcesUI.runNewMap(0); // Repeat forever
