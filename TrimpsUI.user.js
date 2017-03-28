@@ -62,15 +62,17 @@ window.RedAcesUI.options = {
         "worldLevel":   179
     },
     "autoPlay": {
-        "enabled":                  true,
-        "voidMapZone":               230,
-        "overkillUntilZone":         215,
-        "oneshotUntilZone":          225,
-        "scryerUntilZone":           230,
-        "buyGoldenVoidUntil":        205,
-        "targetEnemy":        'Turtlimp',
-        "targetSpireCell":            80,
-        "targetSpireNumHits":          8
+        "enabled":                    true,
+        "voidMapZone":                 230,
+        "voidMapCell":                  98,
+        "targetVoidMapNumHits":         10,
+        "overkillUntilZone":           215,
+        "oneshotUntilZone":            225,
+        "scryerUntilZone":             230,
+        "buyGoldenVoidUntil":          205,
+        "targetEnemy":          'Turtlimp',
+        "targetSpireCell":              80,
+        "targetSpireNumHits":            8
     }
 };
 
@@ -743,7 +745,14 @@ window.RedAcesUI.getTrimpsMinDamage = function() {
     return 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0];
 };
 
-/** sets the timer of the Geneticist Assist to seconds */
+/** Returns the avg damage of your trimps (with crits) */
+window.RedAcesUI.getTrimpsAvgDamage = function() {
+    var parts  = calculateDamage(game.global.soldierCurrentAttack, true, true).split('-'),
+        damage = (1 * parts[0] + 1 * parts[1]) / 2;
+    return (1 - getPlayerCritChance()) * damage + getPlayerCritChance() * damage * getPlayerCritDamageMult();
+};
+
+/** sets the timer of the Geneticist Assist to x seconds */
 window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
     if (!game.jobs.Geneticist.locked && (game.global.GeneticistassistSetting != seconds)) {
         if (game.global.GeneticistassistSteps.indexOf(seconds) === -1) {
@@ -759,7 +768,7 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
 
 /** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
 window.RedAcesUI.getNumberOfHitsToKillEnemy = function() {
-    return window.RedAcesUI.getDummyEnemyHealth() / window.RedAcesUI.getTrimpsMinDamage();
+    return window.RedAcesUI.getDummyEnemyHealth() / window.RedAcesUI.getTrimpsAvgDamage();
 };
 
 /** Calculations the void corruption multiplicator for the health */
@@ -774,7 +783,7 @@ window.RedAcesUI.getVoidCorruptionHealthMult = function(isVoidEnemy) {
 
     // Apply "Void Corruption"
     if (game.global.world >= corruptionStart) {
-        var voidCorruption = 10 * Math.pow(1.05, Math.floor((game.global.world - corruptionBaseLevel) / 6)) / 2;
+        var voidCorruption = 10 * Math.pow(1.05, Math.floor((game.global.world - corruptionBaseLevel) / 6));
         if (isVoidEnemy) {
             if (game.global.world < 230) {
                 // Before Magma its only half...
@@ -795,9 +804,19 @@ window.RedAcesUI.getVoidCorruptionHealthMult = function(isVoidEnemy) {
 
 /** calculates how much hits your trimps have to do to kill an Void Turtlimp on cell 99 */
 window.RedAcesUI.getNumberOfHitsToKillVoidEnemy = function() {
-    var numHits = window.RedAcesUI.getDummyEnemyHealth() / window.RedAcesUI.getTrimpsMinDamage();
+    var numHits = window.RedAcesUI.getDummyEnemyHealth() / window.RedAcesUI.getTrimpsAvgDamage(),
+        mapObj  = getCurrentMapObject();
 
-    return numHits * 5.5 * 1.1 * window.RedAcesUI.getVoidCorruptionHealthMult(true);
+    if (mapObj.location !== 'Void') {
+        if (game.talents.voidPower.purchased) { // Void Power I Mastery
+            numHits /= 1.15; // 15 % damage and health
+        }
+        if (game.talents.voidPower.purchased) { // Void Power I Mastery
+            numHits /= 1.2; // 20 % damage and health
+        }
+    }
+
+    return numHits * 4.5 * 1.1 * window.RedAcesUI.getVoidCorruptionHealthMult(true);
 };
 
 /**
@@ -879,7 +898,7 @@ window.RedAcesUI.autoPlay = function() {
     if (game.global.spireActive) {
         targetNumHits = opt.targetSpireNumHits;
         enemyText     = 'c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
-        numHits       = getSpireStats(opt.targetSpireCell, opt.targetEnemy, 'health') / window.RedAcesUI.getTrimpsMinDamage();
+        numHits       = getSpireStats(opt.targetSpireCell, opt.targetEnemy, 'health') / window.RedAcesUI.getTrimpsAvgDamage();
         if (game.global.formation == 4) {
             // Switch from Scryer to Dominance
             numHits /= 8;
@@ -887,9 +906,10 @@ window.RedAcesUI.autoPlay = function() {
             // Switch from X to Dominance
             numHits /= 4;
         }
-    } else if (game.global.world == opt.voidMapZone) {
+    } else if ((game.global.world == opt.voidMapZone) && (game.global.lastClearedCell >= opt.voidMapCell)) {
         numHits       = window.RedAcesUI.getNumberOfHitsToKillVoidEnemy();
         enemyText     = 'c99 Void ' + opt.targetEnemy;
+        targetNumHits = opt.targetVoidMapNumHits;
 
         if (game.global.formation == 4) {
             // Switch from Scryer to Dominance
@@ -901,7 +921,7 @@ window.RedAcesUI.autoPlay = function() {
     } else if (game.global.world < opt.overkillUntilZone) {
         var overkillDamagePlus   = window.RedAcesUI.getOverkillDamagePlus();
         infoEnemySpan.innerHTML  = enemyText;
-        infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsMinDamage() * 100) + ' %';
+        infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsAvgDamage() * 100) + ' %';
         infoTargetSpan.innerHTML = 'Target: > 0';
 
         if ((overkillDamagePlus < 0) && (mapObj === undefined) && (game.global.lastClearedCell > 0)) {
@@ -957,7 +977,11 @@ window.RedAcesUI.autoPlay = function() {
         return;
     }
 
-    if ((game.global.world == opt.voidMapZone) && (game.global.totalVoidMaps > 0) && (mapObj === undefined)) {
+    if ((game.global.world == opt.voidMapZone)
+        && (game.global.lastClearedCell >= opt.voidMapCell)
+        && (game.global.totalVoidMaps > 0)
+        && (mapObj === undefined)
+    ) {
         // We're ready for the voids!
         // TODO Toggle "Finish all Voids"
         message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
