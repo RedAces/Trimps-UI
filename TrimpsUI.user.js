@@ -65,6 +65,7 @@ window.RedAcesUI.options = {
         "voidMapZone":              190,
         "overkillUntilZone":        205,
         "oneshotUntilZone":         215,
+        "scryerUntilZone":          225,
         "buyGolden":           'Helium',
         "targetEnemy":       'Turtlimp',
         "targetSpireCell":           80
@@ -801,6 +802,7 @@ window.RedAcesUI.autoPlay = function() {
 
     if (((mapObj !== undefined) && (mapObj.location === 'Void'))
         || ((mapObj === undefined) && (game.global.spireActive))
+        || (game.global.world >= opt.scryerUntilZone)
     ) {
         targetFormation = 2; // Dominance
     }
@@ -833,8 +835,10 @@ window.RedAcesUI.autoPlay = function() {
         targetNumHits = 8;
         enemyText     = 'c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
     } else if (game.global.world == opt.voidMapZone) {
+        enemyText     = 'c99 Void ' + opt.targetEnemy;
+
         // "Pit" Void Map (450 % Difficulty and 10% Map Bonus)
-        numHits       = window.RedAcesUI.getNumberOfHitsToKillEnemy() * 5.5 * 1.1;
+        numHits      *= 5.5 * 1.1;
 
         var corruptionStart = 150; // Not the actual start
         if (game.global.challengeActive === 'Corrupted') {
@@ -843,14 +847,19 @@ window.RedAcesUI.autoPlay = function() {
 
         // Apply "Void Corruption"
         numHits      *= 10 * Math.pow(1.05, Math.floor((game.global.world - corruptionStart) / 6)) / 2;
-        enemyText     = 'c99 Void ' + opt.targetEnemy
-    } else if (game.global.world < opt.overkillUntilZone) {
-        var overkillDamagePlus = window.RedAcesUI.getOverkillDamagePlus();
-        if (infoDamageSpan) {
-            infoEnemySpan.innerHTML  = enemyText;
-            infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus);
-            infoTargetSpan.innerHTML = 'Target: > 0';
+
+        if (game.global.formation == 4) {
+            // Switch from Scryer to Dominance
+            numHits /= 8;
+        } else if (game.global.formation == 0) {
+            // Switch from X to Dominance
+            numHits /= 4;
         }
+    } else if (game.global.world < opt.overkillUntilZone) {
+        var overkillDamagePlus   = window.RedAcesUI.getOverkillDamagePlus();
+        infoEnemySpan.innerHTML  = enemyText;
+        infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsMinDamage() * 100) + ' %';
+        infoTargetSpan.innerHTML = 'Target: > 0';
 
         if ((overkillDamagePlus < 0) && (mapObj === undefined) && (game.global.lastClearedCell > 0)) {
             // More than 1 hit per enemy and in no map
@@ -875,11 +884,9 @@ window.RedAcesUI.autoPlay = function() {
         targetNumHits = 2;
     }
 
-    if (infoDamageSpan) {
-        infoEnemySpan.innerHTML  = enemyText;
-        infoDamageSpan.innerHTML = 'Hits: ' + prettify(numHits);
-        infoTargetSpan.innerHTML = 'Target: ' + targetNumHits;
-    }
+    infoEnemySpan.innerHTML  = enemyText;
+    infoDamageSpan.innerHTML = 'Hits: ' + prettify(numHits);
+    infoTargetSpan.innerHTML = 'Target: ' + targetNumHits;
 
     if ((numHits > targetNumHits) && (mapObj === undefined)) {
         // More than xx hit per enemy and in no map
