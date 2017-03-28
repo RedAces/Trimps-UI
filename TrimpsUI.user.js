@@ -906,8 +906,7 @@ window.RedAcesUI.autoPlay = function() {
             // "Repeat on" and we're NOT in the spire with prestiges left
             // Special case: spire and prestiges left -> dont stop repeating just yet...
             message(
-                'RA:autoPlay(): stop z' + game.global.world + ' maps, need ' + prettify(numHits) + ' hits per '
-                + enemyText + ' (target: <= ' + targetNumHits + ')',
+                'RA:autoPlay(): stop z' + game.global.world + ' maps',
                 'Notices'
             );
             repeatClicked();
