@@ -73,7 +73,7 @@ window.RedAcesUI.options = {
         "dominanceUntilZone":          230,
         "buyGoldenVoidUntil":          170,
         "targetEnemy":          'Turtlimp',
-        "targetSpireCell":              99,
+        "targetSpireCell":              79,
         "targetSpireNumHits":            8
     }
 };
@@ -814,16 +814,19 @@ window.RedAcesUI.getNumberOfHitsToKillVoidEnemy = function() {
     var numHits = window.RedAcesUI.getDummyEnemyHealth() / window.RedAcesUI.getTrimpsAvgDamage(),
         mapObj  = getCurrentMapObject();
 
-    if (mapObj.location !== 'Void') {
+    if (mapObj === undefined) {
+        // Maps are 10 % harder than their respective world zones
+        numHits *= 1.1;
+    } else if (mapObj.location !== 'Void') {
         if (game.talents.voidPower.purchased) { // Void Power I Mastery
             numHits /= 1.15; // 15 % damage and health
         }
-        if (game.talents.voidPower.purchased) { // Void Power I Mastery
+        if (game.talents.voidPower2.purchased) { // Void Power II Mastery
             numHits /= 1.2; // 20 % damage and health
         }
     }
 
-    return numHits * 4.5 * 1.1 * window.RedAcesUI.getVoidCorruptionHealthMult(true);
+    return numHits * 4.5 * window.RedAcesUI.getVoidCorruptionHealthMult(true);
 };
 
 /**
