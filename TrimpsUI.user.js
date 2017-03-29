@@ -987,10 +987,12 @@ window.RedAcesUI.autoPlay = function() {
         return;
     }
 
-    if ((game.global.world == opt.voidMapZone)
-        && (game.global.lastClearedCell >= opt.voidMapCell)
+    if ((mapObj === undefined)
         && (game.global.totalVoidMaps > 0)
-        && (mapObj === undefined)
+        && ((game.global.world == opt.voidMapZone)
+            || ((game.global.world >= opt.voidMapZone) && (game.global.world <= opt.overkillUntilZone))
+        )
+        && (game.global.lastClearedCell >= opt.voidMapCell)
     ) {
         // We're ready for the voids!
         // TODO Toggle "Finish all Voids"
