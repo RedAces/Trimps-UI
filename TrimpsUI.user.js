@@ -64,13 +64,13 @@ window.RedAcesUI.options = {
     },
     "autoPlay": {
         "enabled":                    true,
-        "voidMapZone":                 190,
+        "voidMapZone":                 230,
         "voidMapCell":                  10,
         "targetVoidMapNumHits":          1,
         "overkillUntilZone":           210,
         "oneshotUntilZone":            220,
-        "scryerUntilZone":             225,
-        "dominanceUntilZone":          230,
+        "scryerUntilZone":             230,
+        "dominanceUntilZone":          235,
         "buyGoldenVoidUntil":          170,
         "targetEnemy":          'Turtlimp',
         "targetSpireCell":              79,
@@ -931,7 +931,7 @@ window.RedAcesUI.autoPlay = function() {
     } else if (game.global.world < opt.overkillUntilZone) {
         var overkillDamagePlus   = window.RedAcesUI.getOverkillDamagePlus();
         infoEnemySpan.innerHTML  = enemyText;
-        infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsAvgDamage() * 100) + ' %';
+        infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsMinDamage() * 100) + ' %';
         infoTargetSpan.innerHTML = 'Target: > 0';
 
         if ((overkillDamagePlus < 0) && (mapObj === undefined) && (game.global.lastClearedCell > 0)) {
