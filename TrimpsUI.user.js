@@ -14,8 +14,8 @@ window.RedAcesUI         = window.RedAcesUI || {};
 window.RedAcesUI.options = {
     "autoBuild": {
         "enabled":          true,
-        "warpstationZero":     5,
-        "warpstationDelta":  5.5,
+        "warpstationZero":    20,
+        "warpstationDelta":    6,
         "buildings": {
             "Gym":            -1,
             "Tribute":        -1,
@@ -31,7 +31,8 @@ window.RedAcesUI.options = {
             "Collector": {
                 "otherBuilding": "Warpstation",
                 "resource":             "gems",
-                "relation":                0.1
+                "relation":                0.1,
+                "untilWorldZone":          200
             },
             "Nursery": {
                 "otherBuilding":         "Gym",
@@ -64,14 +65,14 @@ window.RedAcesUI.options = {
     "autoPlay": {
         "enabled":                    true,
         "voidMapZone":                 230,
-        "voidMapCell":                  98,
+        "voidMapCell":                  90,
         "targetVoidMapNumHits":         10,
         "overkillUntilZone":           215,
         "oneshotUntilZone":            225,
         "scryerUntilZone":             230,
         "buyGoldenVoidUntil":          205,
         "targetEnemy":          'Turtlimp',
-        "targetSpireCell":              80,
+        "targetSpireCell":              99,
         "targetSpireNumHits":            8
     }
 };
@@ -391,15 +392,20 @@ window.RedAcesUI.autoHireTrimps = function() {
     }
 
     if (game.jobs.hasOwnProperty('Explorer')) {
-        maxWorkerTrimps -= game.jobs['Explorer'].owned;
+        maxWorkerTrimps -= game.jobs.Explorer.owned;
     }
 
     if (game.jobs.hasOwnProperty('Geneticist')) {
-        maxWorkerTrimps -= game.jobs['Geneticist'].owned;
+        maxWorkerTrimps -= game.jobs.Geneticist.owned;
+    }
+
+    if (game.jobs.hasOwnProperty('Magmamancer')) {
+        maxWorkerTrimps -= game.jobs.Magmamancer.owned;
     }
 
     window.RedAcesUI.hire('Trainer', 'Max');
     window.RedAcesUI.hire('Explorer', 'Max');
+    window.RedAcesUI.hire('Magmamancer', 'Max');
 
     for (var jobName in jobRatios) {
         if (!jobRatios.hasOwnProperty(jobName) || !game.jobs.hasOwnProperty(jobName)) {
@@ -873,8 +879,7 @@ window.RedAcesUI.autoPlay = function() {
         targetFormation = 4; // Scryer
 
     if (((mapObj !== undefined) && (mapObj.location === 'Void'))
-        || ((mapObj === undefined) && (game.global.spireActive))
-        || (game.global.world >= opt.scryerUntilZone)
+        || ((mapObj === undefined) && ((game.global.spireActive) || (game.global.world >= opt.scryerUntilZone)))
     ) {
         targetFormation = 2; // Dominance
     }
@@ -1103,29 +1108,41 @@ window.RedAcesUI.toggleAutomation = function (what) {
 
 /** Show options buttons */
 window.RedAcesUI.displayOptions = function() {
-    var displayButton = function (what, label, where, fullSize) {
+    var displayButton = function (what, label, where, fullSize, onclickCallback) {
         var button          = document.createElement('div');
-        if (window.RedAcesUI.options[what].enabled) {
-            button.className = 'pointer noselect colorSuccess';
-        } else {
-            button.className = 'pointer noselect colorDanger';
-        }
         button.innerHTML    = label;
-        button.id           = 'RedAcesUIOpt' + what;
-        button.onclick      = function () {
-            window.RedAcesUI.toggleAutomation(what);
-        };
+
+        if (window.RedAcesUI.options.hasOwnProperty(what)) {
+            if (window.RedAcesUI.options[what].enabled) {
+                button.className = 'pointer noselect colorSuccess';
+            } else {
+                button.className = 'pointer noselect colorDanger';
+            }
+
+            button.id           = 'RedAcesUIOpt' + what;
+        } else {
+            button.className = 'pointer noselect';
+        }
+        if (onclickCallback) {
+            button.onclick = onclickCallback;
+        } else {
+            button.onclick = function () {
+                window.RedAcesUI.toggleAutomation(what);
+            };
+        }
 
         button.style.border   = '1px solid white';
         button.style.padding  = '0 5px';
         button.style.fontSize = '0.9vw';
 
         if (fullSize) {
-            where.innerHTML = '';
+            where.innerHTML      = '';
         } else {
             button.style.display = 'inline';
         }
         where.appendChild(button);
+
+        return button;
     };
 
     var jobsTitleSpan = document.getElementById('jobsTitleSpan');
@@ -1140,7 +1157,15 @@ window.RedAcesUI.displayOptions = function() {
 
     var buildingsTitleDiv = document.getElementById('buildingsTitleDiv');
     if (buildingsTitleDiv) {
-        displayButton('autoBuild', 'AutoBuild', buildingsTitleDiv.childNodes[1].childNodes[3], true);
+        displayButton('autoBuild', 'AutoBuild', buildingsTitleDiv.childNodes[1].childNodes[3], false);
+
+        displayButton(
+            'calcWSStrat',
+            'Warpstation Strat',
+            buildingsTitleDiv.childNodes[1].childNodes[3],
+            false,
+            window.RedAcesUI.calcWarpstationStrategy
+        );
     }
 
     // Auto Play
