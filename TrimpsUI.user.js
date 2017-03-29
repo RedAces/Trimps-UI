@@ -70,6 +70,7 @@ window.RedAcesUI.options = {
         "overkillUntilZone":           210,
         "oneshotUntilZone":            220,
         "scryerUntilZone":             225,
+        "dominanceUntilZone":          230,
         "buyGoldenVoidUntil":          170,
         "targetEnemy":          'Turtlimp',
         "targetSpireCell":              99,
@@ -832,9 +833,8 @@ window.RedAcesUI.getNumberOfHitsToKillVoidEnemy = function() {
  * if its < 0  -> no overkill!
  */
 window.RedAcesUI.getOverkillDamagePlus = function() {
-    var trimpMinDamage = window.RedAcesUI.getTrimpsMinDamage(),
-        enemyHealth    = window.RedAcesUI.getDummyEnemyHealth(),
-        trampleDamage  = trimpMinDamage - enemyHealth;
+    var enemyHealth    = window.RedAcesUI.getDummyEnemyHealth(),
+        trampleDamage  = window.RedAcesUI.getTrimpsMinDamage() - enemyHealth;
 
     return trampleDamage * game.portal.Overkill.level * 0.005 - enemyHealth;
 };
@@ -878,7 +878,9 @@ window.RedAcesUI.autoPlay = function() {
     var mapObj          = getCurrentMapObject(),
         targetFormation = 4; // Scryer
 
-    if (((mapObj !== undefined) && (mapObj.location === 'Void'))
+    if ((mapObj === undefined) && (game.global.world >= opt.dominanceUntilZone)) {
+        targetFormation = 1; // X
+    } else if (((mapObj !== undefined) && (mapObj.location === 'Void'))
         || ((mapObj === undefined) && ((game.global.spireActive) || (game.global.world >= opt.scryerUntilZone)))
     ) {
         targetFormation = 2; // Dominance
