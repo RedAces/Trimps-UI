@@ -67,7 +67,7 @@ window.RedAcesUI.options = {
         "voidMapZone":                 230,
         "voidMapCell":                  10,
         "targetVoidMapNumHits":          1,
-        "overkillUntilZone":           210,
+        "overkillUntilZone":           205,
         "oneshotUntilZone":            220,
         "scryerUntilZone":             230,
         "dominanceUntilZone":          235,
