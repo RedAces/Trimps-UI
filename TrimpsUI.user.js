@@ -260,6 +260,9 @@ window.RedAcesUI.displayEfficiency = function () {
                 } else if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
                     itemElement.style.borderColor = 'yellow';
                     itemElement.style.color       = 'yellow';
+                } else {
+                    itemElement.style.borderColor = 'white';
+                    itemElement.style.color       = 'white';
                 }
             }
 
@@ -598,7 +601,9 @@ window.RedAcesUI.farmMap = function(repeatUntil) {
 
     if (game.global.switchToMaps
         && !game.global.preMapsActive
-        && (game.resources.trimps.owned / game.resources.trimps.realMax() > 0.9)
+        && ((game.resources.trimps.soldiers == 0) // Will happen on the maps screen
+            || ((game.resources.trimps.realMax() - game.resources.trimps.owned) / game.resources.trimps.soldiers < 0.1)
+        )
     ) {
         // skip "waiting for trimps to die" if they are > 90%
         mapsClicked();
@@ -733,7 +738,7 @@ window.RedAcesUI.dummyEnemyHealth = 0;
 window.RedAcesUI.dummyEnemyLevel  = 0;
 
 /** get the HP of an enemy dummy */
-window.RedAcesUI.getDummyEnemyHealth = function () {
+window.RedAcesUI.getDummyEnemyHealth = function (type) {
     var health = game.global.getEnemyHealth(99, window.RedAcesUI.options.autoPlay.targetEnemy);
 
     if (game.global.world > 5 && game.global.mapsActive) {
@@ -745,13 +750,35 @@ window.RedAcesUI.getDummyEnemyHealth = function () {
         || (window.RedAcesUI.dummyEnemyLevel > game.global.world) // after portal
     ) {
         window.RedAcesUI.dummyEnemyHealth = health;
+    } else {
+        health = window.RedAcesUI.dummyEnemyHealth;
     }
 
     window.RedAcesUI.dummyEnemyLevel = game.global.world;
+    health *= RedAcesUI.getVoidCorruptionHealthMult(type);
 
-    // message('Enemy health at z' + game.global.world + ': ' + prettify(window.RedAcesUI.dummyEnemyHealth), 'Notices');
-
-    return window.RedAcesUI.dummyEnemyHealth;
+    // Type:
+    // 'World' .. Nothing extra
+    // 'Map'   .. 10% Extra difficulty
+    // 'Void'  .. 10% Extra difficulty + 450 % Difficulty (Pits) but -15 % Void Power I and -20% Void Power II
+    if (type == 'World') {
+        // no extras
+    } else if (type == 'Map') {
+        health    *= 1.1;
+    } else if (type == 'Void') {
+        health    *= 1.1 * 4.5;
+        var mapObj = getCurrentMapObject();
+        if ((mapObj == undefined) || (mapObj.location !== 'Void')) {
+            // Add Void Power I/II Masteries if not already in VM
+            if (game.talents.voidPower.purchased) {
+                health /= 1.15; // 15 % damage and health
+            }
+            if (game.talents.voidPower2.purchased) { // Void Power II Mastery
+                health /= 1.2; // 20 % damage and health
+            }
+        }
+    }
+    return health;
 };
 
 /** Returns the min damage of your trimps */
@@ -781,13 +808,13 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
 };
 
 /** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
-window.RedAcesUI.getNumberOfHitsToKillEnemy = function() {
+window.RedAcesUI.getNumberOfHitsToKillEnemy = function(type) {
     // var voidCorruptionBuff = Math.max(1, RedAcesUI.getVoidCorruptionHealthMult(true) / 2);
-    return window.RedAcesUI.getDummyEnemyHealth() / window.RedAcesUI.getTrimpsAvgDamage();
+    return window.RedAcesUI.getDummyEnemyHealth(type) / window.RedAcesUI.getTrimpsAvgDamage();
 };
 
 /** Calculations the void corruption multiplicator for the health */
-window.RedAcesUI.getVoidCorruptionHealthMult = function(isVoidEnemy) {
+window.RedAcesUI.getVoidCorruptionHealthMult = function(type) {
     var corruptionStart     = 180,
         corruptionBaseLevel = 150;
 
@@ -796,45 +823,32 @@ window.RedAcesUI.getVoidCorruptionHealthMult = function(isVoidEnemy) {
         corruptionBaseLevel = 1;
     }
 
-    // Apply "Void Corruption"
-    if (game.global.world >= corruptionStart) {
-        var voidCorruption = 10 * Math.pow(1.05, Math.floor((game.global.world - corruptionBaseLevel) / 6));
-        if (isVoidEnemy) {
-            if (game.global.world < 230) {
-                // Before Magma its only half...
-                voidCorruption /= 2;
-            }
-            return voidCorruption;
-        } else { // no void enemy
-            if (game.global.world < 230) {
-                // No Void Corruption for normal map enemies before 230
-                return 1;
-            }
-            return voidCorruption / 2;
-        }
-    } else {
+    // No "Void Corruption" yet
+    if (game.global.world < corruptionStart) {
         return 1;
     }
-};
 
-/** calculates how much hits your trimps have to do to kill an Void Turtlimp on cell 99 */
-window.RedAcesUI.getNumberOfHitsToKillVoidEnemy = function() {
-    var numHits = window.RedAcesUI.getDummyEnemyHealth() / window.RedAcesUI.getTrimpsAvgDamage(),
-        mapObj  = getCurrentMapObject();
+    var voidCorruption = 10 * Math.pow(1.05, Math.floor((game.global.world - corruptionBaseLevel) / 6));
 
-    if (mapObj === undefined) {
-        // Maps are 10 % harder than their respective world zones
-        numHits *= 1.1;
-    } else if (mapObj.location !== 'Void') {
-        if (game.talents.voidPower.purchased) { // Void Power I Mastery
-            numHits /= 1.15; // 15 % damage and health
+    // Type:
+    // 'World' .. Void Corruption is applied fully
+    // 'Map'   .. No Void Corruption until < 230 and then half
+    // 'Void'  .. Half Void Corruption until < 230 and then full
+    if (type == 'World') {
+        return voidCorruption;
+    } else if (type == 'Map') {
+        if (game.global.world < 230) {
+            // No Void Corruption for normal map enemies before 230
+            return 1;
         }
-        if (game.talents.voidPower2.purchased) { // Void Power II Mastery
-            numHits /= 1.2; // 20 % damage and health
+        return voidCorruption / 2;
+    } else if (type == 'Void') {
+        if (game.global.world < 230) {
+            // Before Magma its only half...
+            voidCorruption /= 2;
         }
+        return voidCorruption;
     }
-
-    return numHits * 4.5 * window.RedAcesUI.getVoidCorruptionHealthMult(true);
 };
 
 /**
@@ -844,7 +858,7 @@ window.RedAcesUI.getNumberOfHitsToKillVoidEnemy = function() {
  * if its < 0  -> no overkill!
  */
 window.RedAcesUI.getNeededOverkillDamage = function() {
-    var enemyHealth     = window.RedAcesUI.getDummyEnemyHealth(),
+    var enemyHealth     = window.RedAcesUI.getDummyEnemyHealth('World'),
         trampleDamage   = window.RedAcesUI.getTrimpsMinDamage() - enemyHealth,
         overkillPercent = game.portal.Overkill.level * 0.005;
 
@@ -903,15 +917,10 @@ window.RedAcesUI.autoPlay = function() {
         setFormation(targetFormation)
     }
 
-    if ((game.global.world < (opt.voidMapZone - 1)) && (game.global.world !== 199) && (game.global.world != 200)) {
-        // ensure 30 Anticipation stacks for spire
-        window.RedAcesUI.setGeneticistAssist(10, 'RA:autoPlay():');
-    } else {
-        window.RedAcesUI.setGeneticistAssist(30, 'RA:autoPlay():');
-    }
+    window.RedAcesUI.setGeneticistAssist(30, 'RA:autoPlay():');
 
     // Auto run Maps
-    var numHits        = window.RedAcesUI.getNumberOfHitsToKillEnemy(),
+    var numHits        = window.RedAcesUI.getNumberOfHitsToKillEnemy('World'),
         targetNumHits  = 1,
         enemyText      = 'c99 ' + opt.targetEnemy;
 
@@ -927,7 +936,7 @@ window.RedAcesUI.autoPlay = function() {
             numHits /= 4;
         }
     } else if ((game.global.world == opt.voidMapZone) && (game.global.lastClearedCell >= opt.voidMapCell)) {
-        numHits       = window.RedAcesUI.getNumberOfHitsToKillVoidEnemy();
+        numHits       = window.RedAcesUI.getNumberOfHitsToKillEnemy('Void');
         enemyText     = 'c99 Void ' + opt.targetEnemy;
         targetNumHits = opt.targetVoidMapNumHits;
 
