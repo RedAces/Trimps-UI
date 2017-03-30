@@ -405,7 +405,7 @@ window.RedAcesUI.autoHireTrimps = function() {
 
     window.RedAcesUI.hire('Trainer', 'Max');
 
-    if ((mapObj === undefined)
+    if ((mapObj == undefined)
         || (mapObj.location !== "Void")
         || !window.RedAcesUI.options.autoHireTrimps.fireAllForVoids
     ) {
