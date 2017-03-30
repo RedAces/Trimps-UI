@@ -64,16 +64,24 @@ window.RedAcesUI.options = {
     },
     "autoPlay": {
         "enabled":                    true,
-        "voidMapZone":                 230,
         "voidMapCell":                  90,
-        "targetVoidMapNumHits":          1,
         "overkillUntilZone":           205,
         "oneshotUntilZone":            220,
         "scryerUntilZone":             230,
         "dominanceUntilZone":          235,
+
+        // Corrupted
+        "voidMapZone":                 190,
+        "targetVoidMapNumHits":          1,
         "buyGoldenVoidUntil":          170,
+
+        // VM z230
+        // "voidMapZone":                 230,
+        // "targetVoidMapNumHits":          1,
+        // "buyGoldenVoidUntil":          200,
+
         "targetEnemy":          'Turtlimp',
-        "targetSpireCell":              79,
+        "targetSpireCell":              89,
         "targetSpireNumHits":            8
     }
 };
@@ -830,16 +838,17 @@ window.RedAcesUI.getNumberOfHitsToKillVoidEnemy = function() {
 };
 
 /**
- * Returns the damage plus after overkilling two trimps
+ * Returns the damage needed to overkill two trimps
  *
  * if its >= 0 -> overkill!
  * if its < 0  -> no overkill!
  */
-window.RedAcesUI.getOverkillDamagePlus = function() {
-    var enemyHealth    = window.RedAcesUI.getDummyEnemyHealth(),
-        trampleDamage  = window.RedAcesUI.getTrimpsMinDamage() - enemyHealth;
+window.RedAcesUI.getNeededOverkillDamage = function() {
+    var enemyHealth     = window.RedAcesUI.getDummyEnemyHealth(),
+        trampleDamage   = window.RedAcesUI.getTrimpsMinDamage() - enemyHealth,
+        overkillPercent = game.portal.Overkill.level * 0.005;
 
-    return trampleDamage * game.portal.Overkill.level * 0.005 - enemyHealth;
+    return (trampleDamage * overkillPercent - enemyHealth) / overkillPercent;
 };
 
 /** Plays the game for you */
@@ -894,7 +903,8 @@ window.RedAcesUI.autoPlay = function() {
         setFormation(targetFormation)
     }
 
-    if ((game.global.world < (opt.voidMapZone - 1)) && !game.global.spireActive) {
+    if ((game.global.world < (opt.voidMapZone - 1)) && (game.global.world !== 199) && (game.global.world != 200)) {
+        // ensure 30 Anticipation stacks for spire
         window.RedAcesUI.setGeneticistAssist(10, 'RA:autoPlay():');
     } else {
         window.RedAcesUI.setGeneticistAssist(30, 'RA:autoPlay():');
@@ -929,7 +939,7 @@ window.RedAcesUI.autoPlay = function() {
             numHits /= 4;
         }
     } else if (game.global.world < opt.overkillUntilZone) {
-        var overkillDamagePlus   = window.RedAcesUI.getOverkillDamagePlus();
+        var overkillDamagePlus   = window.RedAcesUI.getNeededOverkillDamage();
         infoEnemySpan.innerHTML  = enemyText;
         infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsAvgDamage() * 100) + ' %';
         infoTargetSpan.innerHTML = 'Target: > 0';
@@ -975,9 +985,8 @@ window.RedAcesUI.autoPlay = function() {
     if ((numHits <= targetNumHits) && (mapObj !== undefined)) {
         // less than xx hit per enemy and in map
 
-        if (game.global.repeatMap && !(game.global.spireActive && (addSpecials(true, true, null, true).length > 0))) {
+        if (game.global.repeatMap && !game.global.spireActive) {
             // "Repeat on" and we're NOT in the spire with prestiges left
-            // Special case: spire and prestiges left -> dont stop repeating just yet...
             message(
                 'RA:autoPlay(): stop z' + game.global.world + ' maps',
                 'Notices'
