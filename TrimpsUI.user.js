@@ -44,7 +44,7 @@ window.RedAcesUI.options = {
     },
     "autoHireTrimps": {
         "enabled":         true,
-        "fireAllForVoids":    1
+        "fireAllForVoids": true
     },
     "autoGather": {
         "enabled": true
@@ -249,34 +249,25 @@ window.RedAcesUI.displayEfficiency = function () {
             }
 
             if (window.RedAcesUI.options.displayEfficiency.enabled) {
-                var efficiencySpan = document.getElementById('RedAcesUIEff' + itemName);
-
-                if (efficiencySpan == undefined) {
-                    efficiencySpan = document.createElement('span');
-                    efficiencySpan.id = 'RedAcesUIEff' + itemName;
-                    var itemElement = document.getElementById(itemName);
-                    if (itemElement == undefined) {
-                        continue;
-                    }
-                    itemElement.appendChild(efficiencySpan);
+                var itemElement = document.getElementById(itemName);
+                if (itemElement == undefined) {
+                    continue;
                 }
 
-                var cssColor = '';
                 if (i == 0) {
-                    cssColor = 'background-color:green;';
+                    itemElement.style.borderColor = 'lightgreen';
+                    itemElement.style.color       = 'lightgreen';
                 } else if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
-                    cssColor = 'background-color:yellow;color:black;';
+                    itemElement.style.borderColor = 'yellow';
+                    itemElement.style.color       = 'yellow';
                 }
-
-                efficiencySpan.innerHTML = '<br/><span style="padding:2px 5px;' + cssColor + '">'
-                    + stat + ' #' + (1 * i + 1) + '</span>';
             }
 
             if (window.RedAcesUI.options.autoBuyEquipment.enabled
+                && game.equipment.hasOwnProperty(itemName)
                 && game.global.hasOwnProperty('autoPrestiges')
                 && ((game.global.autoPrestiges == 1)
                     || (((game.global.autoPrestiges == 2) || (game.global.autoPrestiges == 3)) && (stat == 'Attack')))
-                && game.equipment.hasOwnProperty(itemName)
             ) {
                 // 1 ... Auto-Prestige "all"
                 // 2 ... Auto-Prestige "Weapons Only" -> Auto Buy Weapons only
@@ -413,8 +404,14 @@ window.RedAcesUI.autoHireTrimps = function() {
     }
 
     window.RedAcesUI.hire('Trainer', 'Max');
-    window.RedAcesUI.hire('Explorer', 'Max');
-    window.RedAcesUI.hire('Magmamancer', 'Max');
+
+    if ((mapObj === undefined)
+        || (mapObj.location !== "Void")
+        || !window.RedAcesUI.options.autoHireTrimps.fireAllForVoids
+    ) {
+        window.RedAcesUI.hire('Explorer', 'Max');
+        window.RedAcesUI.hire('Magmamancer', 'Max');
+    }
 
     for (var jobName in jobRatios) {
         if (!jobRatios.hasOwnProperty(jobName) || !game.jobs.hasOwnProperty(jobName)) {
@@ -588,7 +585,7 @@ window.RedAcesUI.autoPause = function() {
 };
 
 /** Runs a newly bought map */
-window.RedAcesUI.runNewMap = function(repeatUntil) {
+window.RedAcesUI.farmMap = function(repeatUntil) {
     if (game.global.currentMapId != '') {
         // We're already running a map!
         return 'already running a map';
@@ -597,12 +594,14 @@ window.RedAcesUI.runNewMap = function(repeatUntil) {
     if (!game.global.switchToMaps && !game.global.preMapsActive) {
         // switch to maps screen and wait for it
         mapsClicked();
+    }
 
-        if (game.global.switchToMaps && !game.global.preMapsActive) {
-            // skip "waiting for trimps to die"
-            // TODO really?
-            mapsClicked();
-        }
+    if (game.global.switchToMaps
+        && !game.global.preMapsActive
+        && (game.resources.trimps.owned / game.resources.trimps.realMax() > 0.9)
+    ) {
+        // skip "waiting for trimps to die" if they are > 90%
+        mapsClicked();
     }
 
     if (!game.global.preMapsActive) {
@@ -783,6 +782,7 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
 
 /** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
 window.RedAcesUI.getNumberOfHitsToKillEnemy = function() {
+    // var voidCorruptionBuff = Math.max(1, RedAcesUI.getVoidCorruptionHealthMult(true) / 2);
     return window.RedAcesUI.getDummyEnemyHealth() / window.RedAcesUI.getTrimpsAvgDamage();
 };
 
@@ -946,12 +946,14 @@ window.RedAcesUI.autoPlay = function() {
 
         if ((overkillDamagePlus < 0) && (mapObj === undefined) && (game.global.lastClearedCell > 0)) {
             // More than 1 hit per enemy and in no map
-            message(
-                'RA:autoPlay(): run z' + game.global.world + ' maps, need ' + prettify(Math.abs(overkillDamagePlus))
-                + ' more damage to Overkill',
-                'Notices'
-            );
-            window.RedAcesUI.runNewMap(0); // Repeat forever
+            if (!game.global.switchToMaps) {
+                message(
+                    'RA:autoPlay(): run z' + game.global.world + ' maps, need ' + prettify(Math.abs(overkillDamagePlus))
+                    + ' more damage to Overkill',
+                    'Notices'
+                );
+            }
+            window.RedAcesUI.farmMap(0); // Repeat forever
             return;
         } else if ((overkillDamagePlus >= 0) && (mapObj !== undefined) && game.global.repeatMap) {
             // less than 1 hit per enemy, in map and "repeat on"
@@ -973,19 +975,21 @@ window.RedAcesUI.autoPlay = function() {
 
     if ((numHits > targetNumHits) && (mapObj === undefined)) {
         // More than xx hit per enemy and in no map
-        message(
-            'RA:autoPlay(): run z' + game.global.world + ' maps, need ' + prettify(numHits) + ' hits per '
-            + enemyText + ' (target: <= ' + targetNumHits + ')',
-            'Notices'
-        );
-        window.RedAcesUI.runNewMap(0); // Repeat forever
+        if (!game.global.switchToMaps) {
+            message(
+                'RA:autoPlay(): run z' + game.global.world + ' maps, need ' + prettify(numHits) + ' hits per '
+                + enemyText + ' (target: <= ' + targetNumHits + ')',
+                'Notices'
+            );
+        }
+        window.RedAcesUI.farmMap(0); // Repeat forever
         return;
     }
 
     if ((numHits <= targetNumHits) && (mapObj !== undefined)) {
         // less than xx hit per enemy and in map
 
-        if (game.global.repeatMap && !game.global.spireActive) {
+        if (game.global.repeatMap) {
             // "Repeat on" and we're NOT in the spire with prestiges left
             message(
                 'RA:autoPlay(): stop z' + game.global.world + ' maps',
