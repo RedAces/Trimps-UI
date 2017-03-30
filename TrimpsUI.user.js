@@ -602,10 +602,12 @@ window.RedAcesUI.farmMap = function(repeatUntil) {
     if (game.global.switchToMaps
         && !game.global.preMapsActive
         && ((game.resources.trimps.soldiers == 0) // Will happen on the maps screen
+            || (game.global.lastClearedCell >= 95)
             || ((game.resources.trimps.realMax() - game.resources.trimps.owned) / game.resources.trimps.soldiers < 0.1)
         )
     ) {
         // skip "waiting for trimps to die" if they are > 90%
+        // or its urgent
         mapsClicked();
     }
 
@@ -755,12 +757,18 @@ window.RedAcesUI.getDummyEnemyHealth = function (type) {
     }
 
     window.RedAcesUI.dummyEnemyLevel = game.global.world;
+
+    if (type == 'None') {
+        return health;
+    }
+
     health *= RedAcesUI.getVoidCorruptionHealthMult(type);
 
     // Type:
-    // 'World' .. Nothing extra
-    // 'Map'   .. 10% Extra difficulty
-    // 'Void'  .. 10% Extra difficulty + 450 % Difficulty (Pits) but -15 % Void Power I and -20% Void Power II
+    // 'None'  .. Nothing, not even Void Corruption!
+    // 'World' .. Void Corruption
+    // 'Map'   .. Void Corruption + 10% Extra difficulty
+    // 'Void'  .. Void Corruption + 10% Extra difficulty + 450% Difficulty (Pits) - 15% Void Power I - 20% Void Power II
     if (type == 'World') {
         // no extras
     } else if (type == 'Map') {
@@ -857,8 +865,8 @@ window.RedAcesUI.getVoidCorruptionHealthMult = function(type) {
  * if its >= 0 -> overkill!
  * if its < 0  -> no overkill!
  */
-window.RedAcesUI.getNeededOverkillDamage = function() {
-    var enemyHealth     = window.RedAcesUI.getDummyEnemyHealth('World'),
+window.RedAcesUI.getNeededOverkillDamage = function(type) {
+    var enemyHealth     = window.RedAcesUI.getDummyEnemyHealth(type),
         trampleDamage   = window.RedAcesUI.getTrimpsMinDamage() - enemyHealth,
         overkillPercent = game.portal.Overkill.level * 0.005;
 
@@ -948,7 +956,7 @@ window.RedAcesUI.autoPlay = function() {
             numHits /= 4;
         }
     } else if (game.global.world < opt.overkillUntilZone) {
-        var overkillDamagePlus   = window.RedAcesUI.getNeededOverkillDamage();
+        var overkillDamagePlus   = window.RedAcesUI.getNeededOverkillDamage('None');
         infoEnemySpan.innerHTML  = enemyText;
         infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsAvgDamage() * 100) + ' %';
         infoTargetSpan.innerHTML = 'Target: > 0';
