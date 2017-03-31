@@ -14,7 +14,7 @@ window.RedAcesUI         = window.RedAcesUI || {};
 window.RedAcesUI.options = {
     "autoBuild": {
         "enabled":          true,
-        "warpstationZero":    20,
+        "warpstationZero":    18,
         "warpstationDelta":    6,
         "buildings": {
             "Gym":            -1,
@@ -70,14 +70,14 @@ window.RedAcesUI.options = {
         "scryerUntilZone":             230,
         "dominanceUntilZone":          235,
 
-        // Corrupted
+        // VMs in Corrupted
         // "voidMapZone":                 190,
         // "targetVoidMapNumHits":          1,
         // "buyGoldenVoidUntil":          170,
         // "voidMapFormation":              2, // Dominance
 
-        // VM z230
-        "voidMapZone":                 230,
+        // VM in Magma
+        "voidMapZone":                 232,
         "targetVoidMapNumHits":          2,
         "buyGoldenVoidUntil":          200,
         "voidMapFormation":              0, // X
@@ -942,6 +942,39 @@ window.RedAcesUI.getNeededOverkillDamage = function(type) {
     return (trampleDamage * overkillPercent - enemyHealth) / overkillPercent;
 };
 
+/** Calculates which formation to use */
+window.RedAcesUI.getApplicableFormation = function () {
+    var mapObj = getCurrentMapObject(); // Scryer
+
+    if ((mapObj != undefined) && (mapObj.location === 'Void')) {
+        return RedAcesUI.options.autoPlay.voidMapFormation;
+    }
+
+    if (game.global.spireActive) {
+        return 2; // Dominance
+    }
+
+    if ((mapObj == undefined)
+        && (game.global.world >= 230)
+        && game.global.gridArray.hasOwnProperty(game.global.lastClearedCell + 1)
+    ) {
+        var thisEnemy = game.global.gridArray[game.global.lastClearedCell + 1];
+        if (!thisEnemy.hasOwnProperty('mutation') || (thisEnemy.mutation !== 'Corruption')) {
+            return 4; // Scryer
+        }
+    }
+
+    if (game.global.world >= RedAcesUI.options.autoPlay.dominanceUntilZone) {
+        return 1; // X
+    }
+
+    if (game.global.world >= RedAcesUI.options.autoPlay.scryerUntilZone) {
+        return 2; // Dominance
+    }
+
+    return 4; // Scryer
+};
+
 /** Plays the game for you */
 window.RedAcesUI.autoPlay = function() {
     var opt = window.RedAcesUI.options.autoPlay;
@@ -979,15 +1012,7 @@ window.RedAcesUI.autoPlay = function() {
 
     // Auto-Stance
     var mapObj          = getCurrentMapObject(),
-        targetFormation = 4; // Scryer
-
-    if ((mapObj != undefined) && (mapObj.location === 'Void')) {
-        targetFormation = opt.voidMapFormation;
-    } else if (game.global.world >= opt.dominanceUntilZone) {
-        targetFormation = 1; // X
-    } else if (game.global.spireActive || (game.global.world >= opt.scryerUntilZone)) {
-        targetFormation = 2; // Dominance
-    }
+        targetFormation = RedAcesUI.getApplicableFormation();
 
     if ((game.upgrades.Formations.allowed) && (game.global.formation !== targetFormation) && (game.global.world >= 60)) {
         message('RA:autoPlay(): setting formation to ' + targetFormation, 'Notices');
@@ -1096,7 +1121,8 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
     ) {
         return 'warp- or gigastation not available';
     }
-    var metalPerSecondPretty = document.getElementById('metalPs').innerHTML,
+    var farmMinutes          = 1,
+        metalPerSecondPretty = document.getElementById('metalPs').innerHTML,
         metalPerSecond       = 1 * metalPerSecondPretty.substring(1, metalPerSecondPretty.length - 4),
         metalPerMinute       = metalPerSecond * 60,
 
@@ -1109,14 +1135,14 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
             * window.RedAcesUI.getArtisanistryMult()
             * window.RedAcesUI.getResourcefulMult(),
 
-        // Amount of warpstation for 5 minutes worth of metal farming
-        targetWarpstationCount   = Math.log(2 * metalPerMinute / warpstationBaseMetalCost) / Math.log(game.buildings.Warpstation.cost.metal[1]),
+        // Amount of warpstation for 1 minute worth of metal farming
+        targetWarpstationCount   = Math.log(farmMinutes * metalPerMinute / warpstationBaseMetalCost) / Math.log(game.buildings.Warpstation.cost.metal[1]),
         rawWarpstationDelta      = targetWarpstationCount / gigastationAllowed,
         warpstationDelta         = Math.floor(rawWarpstationDelta / 0.5) * 0.5,
         warpstationZero          = Math.ceil(targetWarpstationCount - warpstationDelta * gigastationAllowed);
 
     message(
-        'With 2 mins of farming ' + metalPerSecond + ' metal per second you could afford a level '
+        'With ' + farmMinutes + ' min of farming ' + metalPerSecond + ' metal per second you could afford a level '
         + prettify(targetWarpstationCount) + ' warpstation (at ' + gigastationAllowed + ' gigastations)'
         + ' so use 0+' + prettify(rawWarpstationDelta) + ' or ' + warpstationZero + '+' + warpstationDelta
         + ' strategy',
