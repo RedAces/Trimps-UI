@@ -762,9 +762,9 @@ window.RedAcesUI.getDummyEnemyHealth = function (type) {
 
     var health = game.global.getEnemyHealth(99, window.RedAcesUI.options.autoPlay.targetEnemy);
 
-    if (game.global.world > 5 && game.global.mapsActive) {
+    if ((game.global.world > 5) && game.global.mapsActive) {
         // Maps have 10 % higher stats, we need to offset this
-        health /= 1.1;
+        health *= 0.9;
     }
 
     if ((window.RedAcesUI.dummyEnemyHealth < health)
@@ -805,14 +805,34 @@ window.RedAcesUI.getDummyEnemyHealth = function (type) {
 
 /** Returns the min damage of your trimps */
 window.RedAcesUI.getTrimpsMinDamage = function() {
-    return 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0];
+    var damage = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0];
+
+    if (!game.global.mapsActive) {
+        damage /= (1 + game.global.mapBonus * 0.2);
+    }
+
+    if (game.global.titimpLeft > 0) {
+        damage /= 2;
+    }
+
+    return damage;
 };
 
 /** Returns the avg damage of your trimps (with crits) */
 window.RedAcesUI.getTrimpsAvgDamage = function() {
     var parts  = calculateDamage(game.global.soldierCurrentAttack, true, true).split('-'),
         damage = (1 * parts[0] + 1 * parts[1]) / 2;
-    return (1 - getPlayerCritChance()) * damage + getPlayerCritChance() * damage * getPlayerCritDamageMult();
+    damage = (1 - getPlayerCritChance()) * damage + getPlayerCritChance() * damage * getPlayerCritDamageMult();
+
+    if (!game.global.mapsActive) {
+        damage /= (1 + game.global.mapBonus * 0.2);
+    }
+
+    if (game.global.titimpLeft > 0) {
+        damage /= 2;
+    }
+
+    return damage;
 };
 
 /** sets the timer of the Geneticist Assist to x seconds */
@@ -853,6 +873,14 @@ window.RedAcesUI.getNumberOfHitsToKillEnemy = function(type, changeFormationTo) 
             numHits *= 2;
         } else if (changeFormationTo == 4) {
             numHits *= 2;
+        }
+    }
+
+    if (type == 'World') {
+        numHits /= (1 + game.global.mapBonus);
+    } else if (type == 'Map') {
+        if (game.global.titimpLeft > 0) {
+            numHits /= 2;
         }
     }
 
