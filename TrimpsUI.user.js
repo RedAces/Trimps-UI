@@ -74,11 +74,13 @@ window.RedAcesUI.options = {
         // "voidMapZone":                 190,
         // "targetVoidMapNumHits":          1,
         // "buyGoldenVoidUntil":          170,
+        // "voidMapFormation":              2, // Dominance
 
         // VM z230
         "voidMapZone":                 230,
         "targetVoidMapNumHits":          2,
         "buyGoldenVoidUntil":          200,
+        "voidMapFormation":              0, // X
 
         "targetEnemy":          'Turtlimp',
         "targetSpireCell":              89,
@@ -354,7 +356,7 @@ window.RedAcesUI.autoHireTrimps = function() {
         jobRatios,
         jobRatioSum;
 
-    if ((mapObj !== undefined)
+    if ((mapObj != undefined)
         && (mapObj.location === "Void")
         && window.RedAcesUI.options.autoHireTrimps.fireAllForVoids
     ) {
@@ -633,7 +635,7 @@ window.RedAcesUI.farmMap = function(repeatUntil) {
     }
 
     var existingMap = window.RedAcesUI.selectMap(game.global.world);
-    if (existingMap !== undefined) {
+    if (existingMap != undefined) {
         runMap();
     }
 };
@@ -739,8 +741,25 @@ window.RedAcesUI.runVoidMaps = function() {
 window.RedAcesUI.dummyEnemyHealth = 0;
 window.RedAcesUI.dummyEnemyLevel  = 0;
 
-/** get the HP of an enemy dummy */
+/**
+ * get the HP of an enemy dummy
+ *
+ * Types:
+ * 'None'  .. Nothing, not even Void Corruption!
+ * 'World' .. Void Corruption
+ * 'Map'   .. Void Corruption + 10% Extra difficulty
+ * 'Void'  .. Void Corruption + 10% Extra difficulty + 450% Difficulty (Pits) - 15% Void Power I - 20% Void Power II
+ * 'Spire' .. Special Calculation
+ */
 window.RedAcesUI.getDummyEnemyHealth = function (type) {
+    if (type == 'Spire') {
+        return getSpireStats(
+            RedAcesUI.options.autoPlay.targetSpireCell,
+            RedAcesUI.options.autoPlay.targetEnemy,
+            'health'
+        );
+    }
+
     var health = game.global.getEnemyHealth(99, window.RedAcesUI.options.autoPlay.targetEnemy);
 
     if (game.global.world > 5 && game.global.mapsActive) {
@@ -764,11 +783,6 @@ window.RedAcesUI.getDummyEnemyHealth = function (type) {
 
     health *= RedAcesUI.getVoidCorruptionHealthMult(type);
 
-    // Type:
-    // 'None'  .. Nothing, not even Void Corruption!
-    // 'World' .. Void Corruption
-    // 'Map'   .. Void Corruption + 10% Extra difficulty
-    // 'Void'  .. Void Corruption + 10% Extra difficulty + 450% Difficulty (Pits) - 15% Void Power I - 20% Void Power II
     if (type == 'World') {
         // no extras
     } else if (type == 'Map') {
@@ -816,9 +830,33 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
 };
 
 /** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
-window.RedAcesUI.getNumberOfHitsToKillEnemy = function(type) {
-    // var voidCorruptionBuff = Math.max(1, RedAcesUI.getVoidCorruptionHealthMult(true) / 2);
-    return window.RedAcesUI.getDummyEnemyHealth(type) / window.RedAcesUI.getTrimpsAvgDamage();
+window.RedAcesUI.getNumberOfHitsToKillEnemy = function(type, changeFormationTo) {
+    var numHits = window.RedAcesUI.getDummyEnemyHealth(type) / window.RedAcesUI.getTrimpsAvgDamage();
+    if ((changeFormationTo != undefined) && (game.global.formation !== changeFormationTo)) {
+        // Calc in X Formation
+        if (game.global.formation == 1) {
+            numHits /= 2;
+        } else if (game.global.formation == 2) {
+            numHits *= 4;
+        } else if (game.global.formation == 3) {
+            numHits /= 2;
+        } else if (game.global.formation == 4) {
+            numHits /= 2;
+        }
+
+        // Calc in target formation
+        if (changeFormationTo == 1) {
+            numHits *= 2;
+        } else if (changeFormationTo == 2) {
+            numHits /= 4;
+        } else if (changeFormationTo == 3) {
+            numHits *= 2;
+        } else if (changeFormationTo == 4) {
+            numHits *= 2;
+        }
+    }
+
+    return numHits;
 };
 
 /** Calculations the void corruption multiplicator for the health */
@@ -842,6 +880,7 @@ window.RedAcesUI.getVoidCorruptionHealthMult = function(type) {
     // 'World' .. Void Corruption is applied fully
     // 'Map'   .. No Void Corruption until < 230 and then half
     // 'Void'  .. Half Void Corruption until < 230 and then full
+    // 'Spire' .. Like z200 World, but irrelevant because only the lower cells have it TODO Make it spire-cell dependent??
     if (type == 'World') {
         return voidCorruption;
     } else if (type == 'Map') {
@@ -856,6 +895,8 @@ window.RedAcesUI.getVoidCorruptionHealthMult = function(type) {
             voidCorruption /= 2;
         }
         return voidCorruption;
+    } else if (type == 'Spire') {
+        return 1;
     }
 };
 
@@ -912,56 +953,44 @@ window.RedAcesUI.autoPlay = function() {
     var mapObj          = getCurrentMapObject(),
         targetFormation = 4; // Scryer
 
-    if ((mapObj === undefined) && (game.global.world >= opt.dominanceUntilZone)) {
+    if ((mapObj != undefined) && (mapObj.location === 'Void')) {
+        targetFormation = opt.voidMapFormation;
+    } else if (game.global.world >= opt.dominanceUntilZone) {
         targetFormation = 1; // X
-    } else if (((mapObj !== undefined) && (mapObj.location === 'Void'))
-        || ((mapObj === undefined) && ((game.global.spireActive) || (game.global.world >= opt.scryerUntilZone)))
-    ) {
+    } else if (game.global.spireActive || (game.global.world >= opt.scryerUntilZone)) {
         targetFormation = 2; // Dominance
     }
 
     if ((game.upgrades.Formations.allowed) && (game.global.formation !== targetFormation) && (game.global.world >= 60)) {
         message('RA:autoPlay(): setting formation to ' + targetFormation, 'Notices');
-        setFormation(targetFormation)
+        setFormation('' + targetFormation)
     }
 
     window.RedAcesUI.setGeneticistAssist(30, 'RA:autoPlay():');
 
     // Auto run Maps
-    var numHits        = window.RedAcesUI.getNumberOfHitsToKillEnemy('World'),
-        targetNumHits  = 1,
+    var targetNumHits  = 1,
+        numHits        = window.RedAcesUI.getNumberOfHitsToKillEnemy('World'),
         enemyText      = 'c99 ' + opt.targetEnemy;
 
     if (game.global.spireActive) {
         targetNumHits = opt.targetSpireNumHits;
+        numHits       = RedAcesUI.getNumberOfHitsToKillEnemy('Spire', 2);
         enemyText     = 'c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
-        numHits       = getSpireStats(opt.targetSpireCell, opt.targetEnemy, 'health') / window.RedAcesUI.getTrimpsAvgDamage();
-        if (game.global.formation == 4) {
-            // Switch from Scryer to Dominance
-            numHits /= 8;
-        } else if (game.global.formation == 0) {
-            // Switch from X to Dominance
-            numHits /= 4;
-        }
-    } else if ((game.global.world == opt.voidMapZone) && (game.global.lastClearedCell >= opt.voidMapCell)) {
-        numHits       = window.RedAcesUI.getNumberOfHitsToKillEnemy('Void');
-        enemyText     = 'c99 Void ' + opt.targetEnemy;
+    } else if ((game.global.world == opt.voidMapZone)
+        && (game.global.lastClearedCell >= opt.voidMapCell)
+        && (game.global.totalVoidMaps > 0)
+    ) {
         targetNumHits = opt.targetVoidMapNumHits;
-
-        if (game.global.formation == 4) {
-            // Switch from Scryer to Dominance
-            numHits /= 8;
-        } else if (game.global.formation == 0) {
-            // Switch from X to Dominance
-            numHits /= 4;
-        }
+        numHits       = window.RedAcesUI.getNumberOfHitsToKillEnemy('Void', opt.voidMapFormation);
+        enemyText     = 'c99 Void ' + opt.targetEnemy;
     } else if (game.global.world < opt.overkillUntilZone) {
         var overkillDamagePlus   = window.RedAcesUI.getNeededOverkillDamage('None');
         infoEnemySpan.innerHTML  = enemyText;
         infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsAvgDamage() * 100) + ' %';
         infoTargetSpan.innerHTML = 'Target: > 0';
 
-        if ((overkillDamagePlus < 0) && (mapObj === undefined) && (game.global.lastClearedCell > 0)) {
+        if ((overkillDamagePlus < 0) && (mapObj == undefined) && (game.global.lastClearedCell > 0)) {
             // More than 1 hit per enemy and in no map
             if (!game.global.switchToMaps) {
                 message(
@@ -972,7 +1001,7 @@ window.RedAcesUI.autoPlay = function() {
             }
             window.RedAcesUI.farmMap(0); // Repeat forever
             return;
-        } else if ((overkillDamagePlus >= 0) && (mapObj !== undefined) && game.global.repeatMap) {
+        } else if ((overkillDamagePlus >= 0) && (mapObj != undefined) && game.global.repeatMap) {
             // less than 1 hit per enemy, in map and "repeat on"
             message(
                 'RA:autoPlay(): stop z' + game.global.world + ' maps',
@@ -990,7 +1019,7 @@ window.RedAcesUI.autoPlay = function() {
     infoDamageSpan.innerHTML = 'Hits: ' + prettify(numHits);
     infoTargetSpan.innerHTML = 'Target: ' + targetNumHits;
 
-    if ((numHits > targetNumHits) && (mapObj === undefined)) {
+    if ((numHits > targetNumHits) && (mapObj == undefined)) {
         // More than xx hit per enemy and in no map
         if (!game.global.switchToMaps) {
             message(
@@ -1003,7 +1032,7 @@ window.RedAcesUI.autoPlay = function() {
         return;
     }
 
-    if ((numHits <= targetNumHits) && (mapObj !== undefined)) {
+    if ((numHits <= targetNumHits) && (mapObj != undefined)) {
         // less than xx hit per enemy and in map
 
         if (game.global.repeatMap) {
@@ -1017,7 +1046,8 @@ window.RedAcesUI.autoPlay = function() {
         return;
     }
 
-    if ((mapObj === undefined)
+    if ((numHits <= targetNumHits)
+        && (mapObj == undefined)
         && (game.global.totalVoidMaps > 0)
         && ((game.global.world == opt.voidMapZone)
             || ((game.global.world >= opt.voidMapZone) && (game.global.world <= opt.overkillUntilZone))
