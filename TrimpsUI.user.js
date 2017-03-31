@@ -71,14 +71,14 @@ window.RedAcesUI.options = {
         "dominanceUntilZone":          235,
 
         // Corrupted
-        "voidMapZone":                 190,
-        "targetVoidMapNumHits":          1,
-        "buyGoldenVoidUntil":          170,
+        // "voidMapZone":                 190,
+        // "targetVoidMapNumHits":          1,
+        // "buyGoldenVoidUntil":          170,
 
         // VM z230
-        // "voidMapZone":                 230,
-        // "targetVoidMapNumHits":          1,
-        // "buyGoldenVoidUntil":          200,
+        "voidMapZone":                 230,
+        "targetVoidMapNumHits":          2,
+        "buyGoldenVoidUntil":          200,
 
         "targetEnemy":          'Turtlimp',
         "targetSpireCell":              89,
