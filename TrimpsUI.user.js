@@ -80,7 +80,7 @@ window.RedAcesUI.options = {
         "voidMapZone":                 232,
         "targetVoidMapNumHits":          2,
         "buyGoldenVoidUntil":          200,
-        "voidMapFormation":              0, // X
+        "voidMapFormation":              2, // Dominance
 
         "targetEnemy":          'Turtlimp',
         "targetSpireCell":              89,
@@ -280,13 +280,16 @@ window.RedAcesUI.displayEfficiency = function () {
 
                 equipData = game.equipment[itemName];
                 if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
-                    if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable) {
-                        window.RedAcesUI.buyEquipment(itemName, 1);
-                    } else if (itemPrestiges.hasOwnProperty(itemName)
-                        && (itemPrestiges[itemName].allowed === itemPrestiges[itemName].done)
-                        && (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeUnavailable)
+                    if (itemPrestiges.hasOwnProperty(itemName)
+                        && (itemPrestiges[itemName].allowed > itemPrestiges[itemName].done)
+                        && (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable)
                     ) {
-                        // there is no prestige available
+                        // there is a prestige available
+                        // if (RedAcesUI.getNumberOfHitsToKillEnemy('Map') > 1) {
+                            // Only buy equipment if needed, otherwise wait for prestiges!
+                            window.RedAcesUI.buyEquipment(itemName, 1);
+                        // }
+                    } else if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeUnavailable) {
                         window.RedAcesUI.buyEquipment(itemName, 1);
                     }
                 }
@@ -943,10 +946,11 @@ window.RedAcesUI.getNeededOverkillDamage = function(type) {
 };
 
 /** Calculates which formation to use */
-window.RedAcesUI.getApplicableFormation = function () {
-    var mapObj = getCurrentMapObject(); // Scryer
+window.RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
+    var mapObj = getCurrentMapObject();
 
     if ((mapObj != undefined) && (mapObj.location === 'Void')) {
+        // TODO Test if block is sufficient
         return RedAcesUI.options.autoPlay.voidMapFormation;
     }
 
@@ -954,7 +958,9 @@ window.RedAcesUI.getApplicableFormation = function () {
         return 2; // Dominance
     }
 
-    if ((mapObj == undefined)
+    // TODO This screws up the auto farming .. ? changeAccordingToNeeds = false?
+    if (changeAccordingToNeeds
+        && (mapObj == undefined)
         && (game.global.world >= 230)
         && game.global.gridArray.hasOwnProperty(game.global.lastClearedCell + 1)
     ) {
@@ -965,7 +971,7 @@ window.RedAcesUI.getApplicableFormation = function () {
     }
 
     if (game.global.world >= RedAcesUI.options.autoPlay.dominanceUntilZone) {
-        return 1; // X
+        return 0; // X
     }
 
     if (game.global.world >= RedAcesUI.options.autoPlay.scryerUntilZone) {
@@ -1012,7 +1018,7 @@ window.RedAcesUI.autoPlay = function() {
 
     // Auto-Stance
     var mapObj          = getCurrentMapObject(),
-        targetFormation = RedAcesUI.getApplicableFormation();
+        targetFormation = RedAcesUI.getDesiredFormation(true);
 
     if ((game.upgrades.Formations.allowed) && (game.global.formation !== targetFormation) && (game.global.world >= 60)) {
         message('RA:autoPlay(): setting formation to ' + targetFormation, 'Notices');
@@ -1023,7 +1029,7 @@ window.RedAcesUI.autoPlay = function() {
 
     // Auto run Maps
     var targetNumHits  = 1,
-        numHits        = window.RedAcesUI.getNumberOfHitsToKillEnemy('World'),
+        numHits        = window.RedAcesUI.getNumberOfHitsToKillEnemy('World', RedAcesUI.getDesiredFormation(false)),
         enemyText      = 'c99 ' + opt.targetEnemy;
 
     if (game.global.spireActive) {
@@ -1119,7 +1125,11 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
     if (!game.buildings.hasOwnProperty('Warpstation')
         || !game.upgrades.hasOwnProperty('Gigastation')
     ) {
-        return 'warp- or gigastation not available';
+        message(
+            'Warp- or Gigastation not available',
+            'Notices'
+        );
+        return;
     }
     var farmMinutes          = 1,
         metalPerSecondPretty = document.getElementById('metalPs').innerHTML,
@@ -1129,7 +1139,7 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
         gigastationCurrent   = game.upgrades.Gigastation.done,
         gigastationAllowed   = game.upgrades.Gigastation.allowed,
 
-        // cost for 1 warpstation at max gigastation
+        // cost for 1 warpstation at max Gigastations
         warpstationBaseMetalCost = game.buildings.Warpstation.cost.metal[0]
             * Math.pow(1.75, gigastationAllowed - gigastationCurrent)
             * window.RedAcesUI.getArtisanistryMult()
@@ -1159,7 +1169,9 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
             + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta,
             'Notices'
         );
-    } else if (window.RedAcesUI.options.autoBuild.warpstationDelta <= warpstationDelta) {
+    } else if ((window.RedAcesUI.options.autoBuild.warpstationDelta < warpstationDelta)
+        && (window.RedAcesUI.options.autoBuild.warpstationZero != warpstationZero)
+    ) {
         window.RedAcesUI.options.autoBuild.warpstationDelta = warpstationDelta;
         window.RedAcesUI.options.autoBuild.warpstationZero  = warpstationZero;
 
