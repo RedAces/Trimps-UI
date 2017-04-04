@@ -65,16 +65,10 @@ window.RedAcesUI.options = {
     "autoPlay": {
         "enabled":                    true,
         "voidMapCell":                  90,
-        "overkillUntilZone":           205,
+        "overkillUntilZone":           210,
         "oneshotUntilZone":            220,
         "scryerUntilZone":             230,
         "dominanceUntilZone":          235,
-
-        // VMs in Corrupted
-        // "voidMapZone":                 190,
-        // "targetVoidMapNumHits":          1,
-        // "buyGoldenVoidUntil":          170,
-        // "voidMapFormation":              2, // Dominance
 
         // VM in Magma
         "voidMapZone":                 232,
@@ -537,7 +531,8 @@ window.RedAcesUI.autoGather = function() {
     if (!window.RedAcesUI.options.autoGather.enabled) {
         return;
     }
-    if (game.global.buildingsQueue.length > 0) {
+
+    if (game.global.buildingsQueue.length > 2) {
         setGather('buildings');
         return;
     }
