@@ -69,7 +69,7 @@ window.RedAcesUI.options = {
         "dominanceUntilZone":          235,
 
         // VM in Magma
-        "voidMapZone":                 232,
+        "voidMapZone":                 240,
         "targetVoidMapNumHits":          2,
         "buyGoldenVoidUntil":          200,
         "voidMapFormation":              2, // Dominance
