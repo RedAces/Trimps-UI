@@ -19,7 +19,7 @@ window.RedAcesUI.options = {
         "buildings": {
             "Gym":            -1,
             "Tribute":        -1,
-            "Collector":      41,
+            "Collector":      50,
             "Gateway":        25,
             "Resort":         50,
             "Hotel":          75,
@@ -31,14 +31,12 @@ window.RedAcesUI.options = {
             "Collector": {
                 "otherBuilding": "Warpstation",
                 "resource":             "gems",
-                "relation":                0.1,
-                "untilWorldZone":          200
+                "relation":                0.1
             },
             "Nursery": {
                 "otherBuilding":         "Gym",
                 "resource":             "wood",
-                "relation":                0.1,
-                "untilWorldZone":          200
+                "relation":               0.01
             }
         }
     },
@@ -406,14 +404,8 @@ window.RedAcesUI.autoHireTrimps = function() {
     }
 
     window.RedAcesUI.hire('Trainer', 'Max');
-
-    if ((mapObj == undefined)
-        || (mapObj.location !== "Void")
-        || !window.RedAcesUI.options.autoHireTrimps.fireAllForVoids
-    ) {
-        window.RedAcesUI.hire('Explorer', 'Max');
-        window.RedAcesUI.hire('Magmamancer', 'Max');
-    }
+    window.RedAcesUI.hire('Magmamancer', 'Max');
+    window.RedAcesUI.hire('Explorer', 'Max');
 
     for (var jobName in jobRatios) {
         if (!jobRatios.hasOwnProperty(jobName) || !game.jobs.hasOwnProperty(jobName)) {
@@ -571,6 +563,8 @@ window.RedAcesUI.autoGather = function() {
 
     if (!game.jobs.hasOwnProperty('Miner') || game.jobs.Miner.locked || (game.global.turkimpTimer > 0)) {
         setGather('metal');
+    } else if (game.global.buildingsQueue.length > 0) {
+        setGather('buildings');
     } else {
         setGather('science');
     }
