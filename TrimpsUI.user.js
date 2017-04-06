@@ -352,7 +352,7 @@ window.RedAcesUI.autoHireTrimps = function() {
         jobRatios,
         jobRatioSum;
 
-    if ((mapObj != undefined)
+    if (game.global.mapsActive
         && (mapObj.location === "Void")
         && window.RedAcesUI.options.autoHireTrimps.fireAllForVoids
     ) {
@@ -783,7 +783,7 @@ window.RedAcesUI.getDummyEnemyHealth = function (type) {
     } else if (type === 'Void') {
         health    *= 1.1 * 4.5;
         var mapObj = getCurrentMapObject();
-        if ((mapObj == undefined) || (mapObj.location !== 'Void')) {
+        if (!game.global.mapsActive || (mapObj.location !== 'Void')) {
             // Add Void Power I/II Masteries if not already in VM
             if (game.talents.voidPower.purchased) {
                 health /= 1.15; // 15 % damage and health
@@ -937,9 +937,8 @@ window.RedAcesUI.getNeededOverkillDamage = function(type) {
 
 /** Calculates which formation to use */
 window.RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
-    var mapObj = getCurrentMapObject();
-
-    if (mapObj != undefined) {
+    if (game.global.mapsActive) {
+        var mapObj = getCurrentMapObject();
         if (mapObj.location === 'Void') {
             // Void Map!
             // TODO Test if block is sufficient
@@ -965,7 +964,7 @@ window.RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
     }
 
     if (changeAccordingToNeeds
-        && (mapObj == undefined)
+        && !game.global.mapsActive
         && (game.global.world >= 230)
         && game.global.gridArray.hasOwnProperty(game.global.lastClearedCell + 1)
     ) {
@@ -1054,7 +1053,7 @@ window.RedAcesUI.autoPlay = function() {
         infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsAvgDamage() * 100) + ' %';
         infoTargetSpan.innerHTML = 'Target: > 0';
 
-        if ((overkillDamagePlus < 0) && (mapObj == undefined) && (game.global.lastClearedCell > 0)) {
+        if ((overkillDamagePlus < 0) && !game.global.mapsActive && (game.global.lastClearedCell > 0)) {
             // More than 1 hit per enemy and in no map
             if (!game.global.switchToMaps) {
                 message(
@@ -1065,7 +1064,7 @@ window.RedAcesUI.autoPlay = function() {
             }
             window.RedAcesUI.farmMap(0); // Repeat forever
             return;
-        } else if ((overkillDamagePlus >= 0) && (mapObj != undefined) && game.global.repeatMap) {
+        } else if ((overkillDamagePlus >= 0) && game.global.mapsActive && game.global.repeatMap) {
             // less than 1 hit per enemy, in map and "repeat on"
             message(
                 'RA:autoPlay(): stop z' + game.global.world + ' maps',
@@ -1083,7 +1082,7 @@ window.RedAcesUI.autoPlay = function() {
     infoDamageSpan.innerHTML = 'Hits: ' + prettify(numHits);
     infoTargetSpan.innerHTML = 'Target: ' + targetNumHits;
 
-    if ((numHits > targetNumHits) && (mapObj == undefined)) {
+    if ((numHits > targetNumHits) && !game.global.mapsActive) {
         // More than xx hit per enemy and in no map
         if (!game.global.switchToMaps) {
             message(
@@ -1096,7 +1095,7 @@ window.RedAcesUI.autoPlay = function() {
         return;
     }
 
-    if ((numHits <= targetNumHits) && (mapObj != undefined)) {
+    if ((numHits <= targetNumHits) && game.global.mapsActive) {
         // less than xx hit per enemy and in map
 
         if (game.global.repeatMap) {
@@ -1111,7 +1110,7 @@ window.RedAcesUI.autoPlay = function() {
     }
 
     if ((numHits <= targetNumHits)
-        && (mapObj == undefined)
+        && !game.global.mapsActive
         && (game.global.totalVoidMaps > 0)
         && ((game.global.world == opt.voidMapZone)
             || ((game.global.world >= opt.voidMapZone) && (game.global.world <= opt.overkillUntilZone))
