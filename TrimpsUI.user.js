@@ -36,7 +36,8 @@ window.RedAcesUI.options = {
             "Nursery": {
                 "otherBuilding":         "Gym",
                 "resource":             "wood",
-                "relation":               0.01
+                "relation":               0.01,
+                "untilWorldZone":          201
             }
         }
     },
@@ -100,7 +101,7 @@ window.RedAcesUI.healthAfterPrestige = function(base, prestige) {
     return base * 13.61 * Math.pow(11.42, prestige - 1);
 };
 
-/** Build x buildings */
+/** Buy x equipment levels */
 window.RedAcesUI.buyEquipment = function(equipmentName, amount) {
     if (!game.equipment.hasOwnProperty(equipmentName) || game.equipment[equipmentName].locked) {
         return;
@@ -744,7 +745,7 @@ window.RedAcesUI.dummyEnemyLevel  = 0;
  * 'Spire' .. Special Calculation
  */
 window.RedAcesUI.getDummyEnemyHealth = function (type) {
-    if (type == 'Spire') {
+    if (type === 'Spire') {
         return getSpireStats(
             RedAcesUI.options.autoPlay.targetSpireCell,
             RedAcesUI.options.autoPlay.targetEnemy,
@@ -769,17 +770,17 @@ window.RedAcesUI.getDummyEnemyHealth = function (type) {
 
     window.RedAcesUI.dummyEnemyLevel = game.global.world;
 
-    if (type == 'None') {
+    if (type === 'None') {
         return health;
     }
 
     health *= RedAcesUI.getVoidCorruptionHealthMult(type);
 
-    if (type == 'World') {
+    if (type === 'World') {
         // no extras
-    } else if (type == 'Map') {
+    } else if (type === 'Map') {
         health    *= 1.1;
-    } else if (type == 'Void') {
+    } else if (type === 'Void') {
         health    *= 1.1 * 4.5;
         var mapObj = getCurrentMapObject();
         if ((mapObj == undefined) || (mapObj.location !== 'Void')) {
@@ -844,7 +845,7 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
 /** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
 window.RedAcesUI.getNumberOfHitsToKillEnemy = function(type, changeFormationTo) {
     var numHits = window.RedAcesUI.getDummyEnemyHealth(type) / window.RedAcesUI.getTrimpsAvgDamage();
-    if ((changeFormationTo != undefined) && (game.global.formation !== changeFormationTo)) {
+    if ((changeFormationTo != undefined) && (game.global.formation != changeFormationTo)) {
         // Calc in X Formation
         if (game.global.formation == 1) {
             numHits /= 2;
@@ -868,9 +869,9 @@ window.RedAcesUI.getNumberOfHitsToKillEnemy = function(type, changeFormationTo) 
         }
     }
 
-    if (type == 'World') {
+    if (type === 'World') {
         numHits /= (1 + game.global.mapBonus);
-    } else if (type == 'Map') {
+    } else if (type === 'Map') {
         if (game.global.titimpLeft > 0) {
             numHits /= 2;
         }
@@ -901,21 +902,21 @@ window.RedAcesUI.getVoidCorruptionHealthMult = function(type) {
     // 'Map'   .. No Void Corruption until < 230 and then half
     // 'Void'  .. Half Void Corruption until < 230 and then full
     // 'Spire' .. Like z200 World, but irrelevant because only the lower cells have it TODO Make it spire-cell dependent??
-    if (type == 'World') {
+    if (type === 'World') {
         return voidCorruption;
-    } else if (type == 'Map') {
+    } else if (type === 'Map') {
         if (game.global.world < 230) {
             // No Void Corruption for normal map enemies before 230
             return 1;
         }
         return voidCorruption / 2;
-    } else if (type == 'Void') {
+    } else if (type === 'Void') {
         if (game.global.world < 230) {
             // Before Magma its only half...
             voidCorruption /= 2;
         }
         return voidCorruption;
-    } else if (type == 'Spire') {
+    } else if (type === 'Spire') {
         return 1;
     }
 };
@@ -938,16 +939,31 @@ window.RedAcesUI.getNeededOverkillDamage = function(type) {
 window.RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
     var mapObj = getCurrentMapObject();
 
-    if ((mapObj != undefined) && (mapObj.location === 'Void')) {
-        // TODO Test if block is sufficient
-        return RedAcesUI.options.autoPlay.voidMapFormation;
+    if (mapObj != undefined) {
+        if (mapObj.location === 'Void') {
+            // Void Map!
+            // TODO Test if block is sufficient
+            return RedAcesUI.options.autoPlay.voidMapFormation;
+        }
+
+        if (changeAccordingToNeeds) {
+            // No Void Map!
+            var numHitsInX = window.RedAcesUI.getNumberOfHitsToKillEnemy('Map', 0);
+            if (numHitsInX <= 1) {
+                // Use scryer if X onehits the enemies
+                return 4;
+            }
+            if (numHitsInX > 4) {
+                // Use Dominance if X needs more than 4 hits for the enemies
+                return 2;
+            }
+        }
     }
 
     if (game.global.spireActive) {
         return 2; // Dominance
     }
 
-    // TODO This screws up the auto farming .. ? changeAccordingToNeeds = false?
     if (changeAccordingToNeeds
         && (mapObj == undefined)
         && (game.global.world >= 230)
@@ -1104,6 +1120,13 @@ window.RedAcesUI.autoPlay = function() {
     ) {
         // We're ready for the voids!
         // TODO Toggle "Finish all Voids"
+
+        // Build all available nurseries
+        window.RedAcesUI.build('Nursery', 'Max');
+
+        // Set generator to "Gain Magmite" because we dont need the fuel any more!
+        changeGeneratorState(0);
+
         message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
         window.RedAcesUI.runVoidMaps();
         return;
