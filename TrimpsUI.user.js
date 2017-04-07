@@ -37,7 +37,8 @@ window.RedAcesUI.options = {
                 "otherBuilding":         "Gym",
                 "resource":             "wood",
                 "relation":               0.01,
-                "untilWorldZone":          201
+                "untilWorldZone":          201,
+                "maxAmount":              1000
             }
         }
     },
@@ -493,6 +494,12 @@ window.RedAcesUI.autoBuild = function() {
             continue;
         }
 
+        if (cheapBuildingData.hasOwnProperty('maxAmount')
+            && (cheapBuildingData.purchased >= cheapBuildingData.maxAmount)
+        ) {
+            continue;
+        }
+
         if (!game.buildings.hasOwnProperty(otherBuildingName)
             || game.buildings[otherBuildingName].locked
             || !game.buildings[otherBuildingName].cost.hasOwnProperty(cheapBuildingData.resource)
@@ -518,6 +525,9 @@ window.RedAcesUI.autoBuild = function() {
             // Now we're solving 3^Amount = Relation / TargetRelation
             // so How many buildings can we build (with 100% cost increase) to match the target relation
             var amount = Math.max(1, Math.floor(Math.log(cheapBuildingData.relation / relation) / Math.log(3)));
+            if (cheapBuildingData.hasOwnProperty('maxAmount')) {
+                amount = Math.min(cheapBuildingData.maxAmount - cheapBuildingData.purchased, amount);
+            }
             window.RedAcesUI.build(buildingName, amount);
         }
     }
