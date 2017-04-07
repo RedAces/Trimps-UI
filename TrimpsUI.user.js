@@ -517,7 +517,7 @@ window.RedAcesUI.autoBuild = function() {
             // Lets assume the worst: A 100% cost increase per building level (=> 3)
             // Now we're solving 3^Amount = Relation / TargetRelation
             // so How many buildings can we build (with 100% cost increase) to match the target relation
-            var amount = Math.log(relation / cheapBuildingData.relation) / Math.log(3);
+            var amount = Math.max(1, Math.floor(Math.log(cheapBuildingData.relation / relation) / Math.log(3)));
             window.RedAcesUI.build(buildingName, amount);
         }
     }
