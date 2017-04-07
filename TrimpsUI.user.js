@@ -143,15 +143,15 @@ window.RedAcesUI.displayEfficiency = function () {
         items    = {"Health": [], "Attack": []},
         itemName,
         stat,
-        itemPrestiges = {};
+        itemPrestiges = {},
+        gain;
 
     // fill the array with the equipment information
     for (itemName in game.equipment) {
         if (!game.equipment.hasOwnProperty(itemName)) {
             continue;
         }
-        var data = game.equipment[itemName],
-            gain;
+        var data = game.equipment[itemName];
 
         if (data.locked || data.hasOwnProperty('blockCalculated')) {
             continue;
@@ -205,8 +205,7 @@ window.RedAcesUI.displayEfficiency = function () {
         ) {
             continue;
         }
-        var equipData = game.equipment[upgradeData.prestiges],
-            gain;
+        var equipData = game.equipment[upgradeData.prestiges];
 
         if (equipData.hasOwnProperty('attack')) {
             stat = 'Attack';
@@ -245,7 +244,7 @@ window.RedAcesUI.displayEfficiency = function () {
 
             if (window.RedAcesUI.options.displayEfficiency.enabled) {
                 var itemElement = document.getElementById(itemName);
-                if (itemElement == undefined) {
+                if (typeof itemElement === 'undefined') {
                     continue;
                 }
 
@@ -303,11 +302,11 @@ window.RedAcesUI.displayEfficiency = function () {
 
 /** Hires x trimps for a job */
 window.RedAcesUI.hire = function(jobName, amount) {
-    if (!game.jobs.hasOwnProperty(jobName) || (game.jobs[jobName].locked)) {
+    if (game.global.firing || !game.jobs.hasOwnProperty(jobName) || (game.jobs[jobName].locked)) {
         return
     }
-    var currentBuyAmount = game.global.buyAmt,
-        firingMode       = game.global.firing;
+
+    var currentBuyAmount = game.global.buyAmt;
 
     if (amount === "Max") {
         // do nothing
@@ -318,8 +317,7 @@ window.RedAcesUI.hire = function(jobName, amount) {
             game.jobs[jobName].owned
         );
     } else {
-        game.global.firing = false;
-        amount             = Math.min(
+        amount = Math.min(
             amount,
             calculateMaxAfford(game.jobs[jobName], false, false, true),
             // unemployed
@@ -334,7 +332,7 @@ window.RedAcesUI.hire = function(jobName, amount) {
     game.global.buyAmt = amount;
     buyJob(jobName, false, true);
     game.global.buyAmt = currentBuyAmount;
-    game.global.firing = firingMode;
+    game.global.firing = false;
 };
 
 /** Auto employment of trimps */
@@ -353,7 +351,7 @@ window.RedAcesUI.autoHireTrimps = function() {
         jobRatioSum;
 
     if (game.global.mapsActive
-        && (mapObj.location === "Void")
+        && (mapObj.location === 'Void')
         && window.RedAcesUI.options.autoHireTrimps.fireAllForVoids
     ) {
         jobRatios = {
@@ -430,7 +428,7 @@ window.RedAcesUI.build = function(buildingName, amount) {
     if (!game.buildings.hasOwnProperty(buildingName) || game.buildings[buildingName].locked) {
         return;
     }
-    if (amount !== "Max") {
+    if (amount !== 'Max') {
         amount = Math.min(amount, calculateMaxAfford(game.buildings[buildingName], true, false, false, true));
         if (amount <= 0) {
             return;
@@ -478,7 +476,7 @@ window.RedAcesUI.autoBuild = function() {
         }
     }
 
-    for (var buildingName in window.RedAcesUI.options.autoBuild.cheapBuildings) {
+    for (buildingName in window.RedAcesUI.options.autoBuild.cheapBuildings) {
         if (!window.RedAcesUI.options.autoBuild.cheapBuildings.hasOwnProperty(buildingName)
             || !game.buildings.hasOwnProperty(buildingName)
             || game.buildings[buildingName].locked
@@ -513,8 +511,14 @@ window.RedAcesUI.autoBuild = function() {
                 game.buildings[otherBuildingName].purchased
             );
 
-        if (buildingCost / otherCost <= cheapBuildingData.relation) {
-            window.RedAcesUI.build(buildingName, 1);
+        var relation = buildingCost / otherCost;
+        if (relation <= cheapBuildingData.relation) {
+            // Try to build multiple cheap buildings at once
+            // Lets assume the worst: A 100% cost increase per building level (=> 3)
+            // Now we're solving 3^Amount = Relation / TargetRelation
+            // so How many buildings can we build (with 100% cost increase) to match the target relation
+            var amount = Math.log(relation / cheapBuildingData.relation) / Math.log(3);
+            window.RedAcesUI.build(buildingName, amount);
         }
     }
 };
@@ -628,7 +632,7 @@ window.RedAcesUI.farmMap = function(repeatUntil) {
     }
 
     var existingMap = window.RedAcesUI.selectMap(game.global.world);
-    if (existingMap != undefined) {
+    if (typeof existingMap !== 'undefined') {
         runMap();
     }
 };
@@ -845,7 +849,7 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
 /** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
 window.RedAcesUI.getNumberOfHitsToKillEnemy = function(type, changeFormationTo) {
     var numHits = window.RedAcesUI.getDummyEnemyHealth(type) / window.RedAcesUI.getTrimpsAvgDamage();
-    if ((changeFormationTo != undefined) && (game.global.formation != changeFormationTo)) {
+    if ((typeof changeFormationTo !== 'undefined') && (game.global.formation != changeFormationTo)) {
         // Calc in X Formation
         if (game.global.formation == 1) {
             numHits /= 2;
@@ -965,7 +969,7 @@ window.RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
 
     if (changeAccordingToNeeds
         && !game.global.mapsActive
-        && (game.global.world >= 230)
+        && (game.global.world >= RedAcesUI.options.autoPlay.scryerUntilZone)
         && game.global.gridArray.hasOwnProperty(game.global.lastClearedCell + 1)
     ) {
         var thisEnemy = game.global.gridArray[game.global.lastClearedCell + 1];
@@ -1021,10 +1025,9 @@ window.RedAcesUI.autoPlay = function() {
     }
 
     // Auto-Stance
-    var mapObj          = getCurrentMapObject(),
-        targetFormation = RedAcesUI.getDesiredFormation(true);
+    var targetFormation = RedAcesUI.getDesiredFormation(true);
 
-    if ((game.upgrades.Formations.allowed) && (game.global.formation !== targetFormation) && (game.global.world >= 60)) {
+    if ((game.upgrades.Formations.allowed) && (game.global.formation != targetFormation) && (game.global.world >= 60)) {
         message('RA:autoPlay(): setting formation to ' + targetFormation, 'Notices');
         setFormation('' + targetFormation)
     }
