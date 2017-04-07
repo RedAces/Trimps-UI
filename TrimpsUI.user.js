@@ -65,13 +65,14 @@ window.RedAcesUI.options = {
     "autoPlay": {
         "enabled":                    true,
         "voidMapCell":                  90,
-        "overkillUntilZone":           210,
-        "oneshotUntilZone":            220,
-        "scryerUntilZone":             230,
-        "dominanceUntilZone":          235,
+
+        "overkillUntilZone":           220, // In Scryer
+        "oneshotUntilZone":            230, // In Scryer
+        "scryerUntilZone":             235, // In Scryer
+        "dominanceUntilZone":          242, // In Dominance
 
         // VM in Magma
-        "voidMapZone":                 240,
+        "voidMapZone":                 242,
         "targetVoidMapNumHits":          2,
         "buyGoldenVoidUntil":          200,
         "voidMapFormation":              2, // Dominance
