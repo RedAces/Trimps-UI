@@ -25,20 +25,21 @@ window.RedAcesUI.options = {
             "Hotel":          75,
             "Mansion":       100,
             "House":         100,
-            "Hut":           100
+            "Hut":           100,
+            "Nursery":       800
         },
         "cheapBuildings": {
             "Collector": {
                 "otherBuilding": "Warpstation",
                 "resource":             "gems",
                 "relation":                0.1
-            },
+            }
+        },
+        "buildByZone": {
             "Nursery": {
-                "otherBuilding":         "Gym",
-                "resource":             "wood",
-                "relation":               0.01,
-                "untilWorldZone":          201,
-                "maxAmount":              1000
+                "startWorldZone":  230,
+                "buildPerZone":    100,
+                "startAmount":     800
             }
         }
     },
@@ -465,6 +466,12 @@ window.RedAcesUI.autoBuild = function() {
         }
     }
 
+    if (window.RedAcesUI.options.autoPlay.enabled
+        && (game.global.world == window.RedAcesUI.options.autoPlay.voidMapZone)
+    ) {
+        window.RedAcesUI.build('Nursery', "Max");
+    }
+
     if (game.upgrades.hasOwnProperty('Gigastation') && game.buildings.hasOwnProperty('Warpstation')) {
         var currentGigastation = game.upgrades.Gigastation.done,
             currentWarpstation = game.buildings.Warpstation.purchased,
@@ -496,7 +503,7 @@ window.RedAcesUI.autoBuild = function() {
         }
 
         if (cheapBuildingData.hasOwnProperty('maxAmount')
-            && (cheapBuildingData.purchased >= cheapBuildingData.maxAmount)
+            && (game.buildings[buildingName].purchased >= cheapBuildingData.maxAmount)
         ) {
             continue;
         }
@@ -511,8 +518,8 @@ window.RedAcesUI.autoBuild = function() {
         }
 
         var buildingCost = window.RedAcesUI.calcCost(
-                game.buildings[buildingName].cost[cheapBuildingData.resource],
-                game.buildings[buildingName].purchased
+            game.buildings[buildingName].cost[cheapBuildingData.resource],
+            game.buildings[buildingName].purchased
             ),
             otherCost    = window.RedAcesUI.calcCost(
                 game.buildings[otherBuildingName].cost[cheapBuildingData.resource],
@@ -527,10 +534,28 @@ window.RedAcesUI.autoBuild = function() {
             // so How many buildings can we build (with 100% cost increase) to match the target relation
             var amount = Math.max(1, Math.floor(Math.log(cheapBuildingData.relation / relation) / Math.log(3)));
             if (cheapBuildingData.hasOwnProperty('maxAmount')) {
-                amount = Math.min(cheapBuildingData.maxAmount - cheapBuildingData.purchased, amount);
+                amount = Math.min(cheapBuildingData.maxAmount - game.buildings[buildingName].purchased, amount);
             }
             window.RedAcesUI.build(buildingName, amount);
         }
+    }
+
+    for (buildingName in window.RedAcesUI.options.autoBuild.buildByZone) {
+        if (!window.RedAcesUI.options.autoBuild.buildByZone.hasOwnProperty(buildingName)
+            || !game.buildings.hasOwnProperty(buildingName)
+            || game.buildings[buildingName].locked
+        ) {
+            continue;
+        }
+
+        var buildingData = window.RedAcesUI.options.autoBuild.buildByZone[buildingName];
+        if (game.global.world < buildingData.startWorldZone) {
+            continue;
+        }
+        var targetAmount = buildingData.startAmount
+            + (game.global.world - buildingData.startWorldZone) * buildingData.buildPerZone;
+
+        window.RedAcesUI.build(buildingName, targetAmount - game.buildings[buildingName].purchased);
     }
 };
 
