@@ -73,14 +73,14 @@ window.RedAcesUI.options = {
         "dominanceUntilZone":          242, // In Dominance
 
         // VM in Magma
-        "voidMapZone":                 242,
+        "voidMapZone":                 245,
         "targetVoidMapNumHits":          2,
         "buyGoldenVoidUntil":          200,
         "voidMapFormation":              2, // Dominance
 
         "targetEnemy":          'Turtlimp',
-        "targetSpireCell":              89,
-        "targetSpireNumHits":            8
+        "targetSpireCell":              95,
+        "targetSpireNumHits":            4
     }
 };
 
@@ -624,7 +624,7 @@ window.RedAcesUI.autoPause = function() {
 
 /** Runs a newly bought map */
 window.RedAcesUI.farmMap = function(repeatUntil) {
-    if (game.global.currentMapId != '') {
+    if (game.global.mapsActive) {
         // We're already running a map!
         return 'already running a map';
     }
@@ -719,7 +719,7 @@ window.RedAcesUI.selectMap = function (level) {
 
 /** Runs all void maps */
 window.RedAcesUI.runVoidMaps = function() {
-    if (game.global.currentMapId != '') {
+    if (game.global.mapsActive) {
         // We're already running a map!
         return 'already running a map';
     }
