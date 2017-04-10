@@ -37,7 +37,7 @@ window.RedAcesUI.options = {
         },
         "buildByZone": {
             "Nursery": {
-                "startWorldZone":  230,
+                "startWorldZone":  235,
                 "buildPerZone":    100,
                 "startAmount":     800
             }
@@ -1138,7 +1138,7 @@ window.RedAcesUI.autoPlay = function() {
         // less than xx hit per enemy and in map
 
         if (game.global.repeatMap) {
-            // "Repeat on" and we're NOT in the spire with prestiges left
+            // "Repeat on" and we're in a map
             message(
                 'RA:autoPlay(): stop z' + game.global.world + ' maps',
                 'Notices'
