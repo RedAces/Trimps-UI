@@ -14,8 +14,8 @@ window.RedAcesUI         = window.RedAcesUI || {};
 window.RedAcesUI.options = {
     "autoBuild": {
         "enabled":          true,
-        "warpstationZero":    18,
-        "warpstationDelta":    6,
+        "warpstationZero":     4,
+        "warpstationDelta":    7,
         "buildings": {
             "Gym":            -1,
             "Tribute":        -1,
@@ -26,7 +26,7 @@ window.RedAcesUI.options = {
             "Mansion":       100,
             "House":         100,
             "Hut":           100,
-            "Nursery":       800
+            "Nursery":       700
         },
         "cheapBuildings": {
             "Collector": {
@@ -39,7 +39,7 @@ window.RedAcesUI.options = {
             "Nursery": {
                 "startWorldZone":  235,
                 "buildPerZone":    100,
-                "startAmount":     800
+                "startAmount":     700
             }
         }
     },
@@ -67,13 +67,13 @@ window.RedAcesUI.options = {
         "enabled":                    true,
         "voidMapCell":                  90,
 
-        "overkillUntilZone":           220, // In Scryer
-        "oneshotUntilZone":            230, // In Scryer
-        "scryerUntilZone":             235, // In Scryer
-        "dominanceUntilZone":          242, // In Dominance
+        "overkillUntilZone":           230, // In Scryer
+        "oneshotUntilZone":            240, // In Scryer
+        "scryerUntilZone":             245, // In Scryer
+        "dominanceUntilZone":          250, // In Dominance
 
         // VM in Magma
-        "voidMapZone":                 251,
+        "voidMapZone":                 253,
         "targetVoidMapNumHits":          2,
         "buyGoldenVoidUntil":          200,
         "voidMapFormation":              2, // Dominance
@@ -1134,6 +1134,11 @@ window.RedAcesUI.autoPlay = function() {
         return;
     }
 
+    if (game.global.world == (opt.voidMapZone - 1)) {
+        // Set generator to "Gain Magmite" because we dont need the fuel any more!
+        changeGeneratorState(0);
+    }
+
     if ((numHits <= targetNumHits) && game.global.mapsActive) {
         // less than xx hit per enemy and in map
 
@@ -1206,6 +1211,54 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
         + prettify(targetWarpstationCount) + ' warpstation (at ' + gigastationAllowed + ' gigastations)'
         + ' so use 0+' + prettify(rawWarpstationDelta) + ' or ' + warpstationZero + '+' + warpstationDelta
         + ' strategy',
+        'Notices'
+    );
+
+    if ((window.RedAcesUI.options.autoBuild.warpstationDelta == warpstationDelta)
+        && (window.RedAcesUI.options.autoBuild.warpstationZero < warpstationZero)
+    ) {
+        window.RedAcesUI.options.autoBuild.warpstationZero = warpstationZero;
+
+        message(
+            'Updating warpstationZero, new Warpstation Strategy is '
+            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta,
+            'Notices'
+        );
+    } else if ((window.RedAcesUI.options.autoBuild.warpstationDelta < warpstationDelta)
+        && (window.RedAcesUI.options.autoBuild.warpstationZero != warpstationZero)
+    ) {
+        window.RedAcesUI.options.autoBuild.warpstationDelta = warpstationDelta;
+        window.RedAcesUI.options.autoBuild.warpstationZero  = warpstationZero;
+
+        message(
+            'Updating warpstation strategy, new Warpstation Strategy is '
+            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta,
+            'Notices'
+        );
+    }
+    return warpstationZero + '+' + warpstationDelta;
+};
+
+window.RedAcesUI.calcWarpstationStrategyCurrent = function() {
+    if (!game.buildings.hasOwnProperty('Warpstation')
+        || !game.upgrades.hasOwnProperty('Gigastation')
+    ) {
+        message(
+            'Warp- or Gigastation not available',
+            'Notices'
+        );
+        return;
+    }
+    var gigastationAllowed     = game.upgrades.Gigastation.allowed,
+        targetWarpstationCount = game.buildings.Warpstation.purchased,
+        rawWarpstationDelta    = targetWarpstationCount / gigastationAllowed,
+        warpstationDelta       = Math.floor(rawWarpstationDelta / 0.5) * 0.5,
+        warpstationZero        = Math.ceil(targetWarpstationCount - warpstationDelta * gigastationAllowed);
+
+    message(
+        'You have a level ' + prettify(targetWarpstationCount) + ' warpstation (at ' + gigastationAllowed
+        + ' gigastations) so use 0+' + prettify(rawWarpstationDelta) + ' or ' + warpstationZero + '+'
+        + warpstationDelta + ' strategy',
         'Notices'
     );
 
@@ -1347,7 +1400,7 @@ window.RedAcesUI.displayOptions = function() {
             'Warpstation Strat',
             buildingsTitleDiv.childNodes[1].childNodes[3],
             false,
-            window.RedAcesUI.calcWarpstationStrategy
+            window.RedAcesUI.calcWarpstationStrategyCurrent
         );
     }
 
