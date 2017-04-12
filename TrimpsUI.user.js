@@ -73,14 +73,14 @@ window.RedAcesUI.options = {
         "dominanceUntilZone":          242, // In Dominance
 
         // VM in Magma
-        "voidMapZone":                 245,
+        "voidMapZone":                 251,
         "targetVoidMapNumHits":          2,
         "buyGoldenVoidUntil":          200,
         "voidMapFormation":              2, // Dominance
 
         "targetEnemy":          'Turtlimp',
-        "targetSpireCell":              95,
-        "targetSpireNumHits":            4
+        "targetSpireCell":              99,
+        "targetSpireNumHits":            2
     }
 };
 
