@@ -14,8 +14,8 @@ window.RedAcesUI         = window.RedAcesUI || {};
 window.RedAcesUI.options = {
     "autoBuild": {
         "enabled":          true,
-        "warpstationZero":     4,
-        "warpstationDelta":    7,
+        "warpstationZero":     7,
+        "warpstationDelta":  7.5,
         "buildings": {
             "Gym":            -1,
             "Tribute":        -1,
@@ -37,9 +37,10 @@ window.RedAcesUI.options = {
         },
         "buildByZone": {
             "Nursery": {
-                "startWorldZone":  235,
-                "buildPerZone":    100,
-                "startAmount":     700
+                "startWorldZone":  240,
+                "buildPerZone":     75,
+                "startAmount":     700,
+                "maxAmount":      2300
             }
         }
     },
@@ -66,16 +67,18 @@ window.RedAcesUI.options = {
     "autoPlay": {
         "enabled":                    true,
         "voidMapCell":                  90,
+        "geneticistAssist":             30,
 
-        "overkillUntilZone":           230, // In Scryer
-        "oneshotUntilZone":            240, // In Scryer
-        "scryerUntilZone":             245, // In Scryer
-        "dominanceUntilZone":          250, // In Dominance
+        "overkillUntilZone":           250,
+        "oneshotUntilZone":            265,
+
+        "scryerUntilZone":             235, // In Scryer
+        "dominanceUntilZone":          265, // In Dominance
 
         // VM in Magma
-        "voidMapZone":                 253,
+        "voidMapZone":                 260,
         "targetVoidMapNumHits":          2,
-        "buyGoldenVoidUntil":          200,
+        "buyGoldenVoidUntil":          230,
         "voidMapFormation":              2, // Dominance
 
         "targetEnemy":          'Turtlimp',
@@ -431,10 +434,15 @@ window.RedAcesUI.build = function(buildingName, amount) {
     if (!game.buildings.hasOwnProperty(buildingName) || game.buildings[buildingName].locked) {
         return;
     }
-    if (amount !== 'Max') {
+    if (amount === 'Max') {
+        setGather('buildings');
+    } else {
         amount = Math.min(amount, calculateMaxAfford(game.buildings[buildingName], true, false, false, true));
         if (amount <= 0) {
             return;
+        }
+        if (amount > 3) {
+            setGather('buildings');
         }
     }
     var currentBuyAmount = game.global.buyAmt;
@@ -554,6 +562,8 @@ window.RedAcesUI.autoBuild = function() {
         }
         var targetAmount = buildingData.startAmount
             + (game.global.world - buildingData.startWorldZone) * buildingData.buildPerZone;
+
+        targetAmount = Math.min(targetAmount, buildingData.maxAmount);
 
         window.RedAcesUI.build(buildingName, targetAmount - game.buildings[buildingName].purchased);
     }
@@ -771,8 +781,68 @@ window.RedAcesUI.runVoidMaps = function() {
     }
 };
 
-window.RedAcesUI.dummyEnemyHealth = 0;
-window.RedAcesUI.dummyEnemyLevel  = 0;
+window.RedAcesUI.dummyEnemyAttack   = 0;
+window.RedAcesUI.dummyEnemyLevelATK = 0;
+
+/**
+ * get the Attack of an enemy dummy
+ *
+ * Types:
+ * 'None'  .. Nothing, not even Void Corruption!
+ * 'World' .. Void Corruption
+ * 'Map'   .. Void Corruption + 10% Extra difficulty
+ * 'Void'  .. Void Corruption + 10% Extra difficulty + 450% Difficulty (Pits)
+ * 'Spire' .. Special Calculation
+ */
+window.RedAcesUI.getDummyEnemyAttack = function (type) {
+    if (type === 'Spire') {
+        return getSpireStats(
+            RedAcesUI.options.autoPlay.targetSpireCell,
+            RedAcesUI.options.autoPlay.targetEnemy,
+            'attack'
+        );
+    }
+
+    var attack = game.global.getEnemyAttack(99, window.RedAcesUI.options.autoPlay.targetEnemy);
+
+    if ((game.global.world > 5) && game.global.mapsActive) {
+        // Maps have 10 % higher stats, we need to offset this
+        attack *= 0.9;
+    }
+
+    if ((window.RedAcesUI.dummyEnemyAttack < attack)
+        || (window.RedAcesUI.dummyEnemyLevelATK > game.global.world) // after portal
+    ) {
+        window.RedAcesUI.dummyEnemyAttack = attack;
+    } else {
+        attack = window.RedAcesUI.dummyEnemyAttack;
+    }
+
+    window.RedAcesUI.dummyEnemyLevelATK = game.global.world;
+
+    if (type === 'None') {
+        return attack;
+    }
+
+    attack *= RedAcesUI.getVoidCorruptionAttackMult(type);
+
+    if (type === 'World') {
+        // no extras
+    } else if (type === 'Map') {
+        attack *= 1.1;
+    } else if (type === 'Void') {
+        attack *= 1.1 * 4.5;
+    }
+    return attack;
+};
+
+/** Calculations the void corruption multiplicator for the attack */
+window.RedAcesUI.getVoidCorruptionAttackMult = function(type) {
+    return window.RedAcesUI.getVoidCorruptionHealthMult(type) / 10 * 3;
+};
+
+window.RedAcesUI.dummyEnemyLevelHP = 0;
+window.RedAcesUI.dummyEnemyHealth  = 0;
 
 /**
  * get the HP of an enemy dummy
@@ -801,14 +871,14 @@ window.RedAcesUI.getDummyEnemyHealth = function (type) {
     }
 
     if ((window.RedAcesUI.dummyEnemyHealth < health)
-        || (window.RedAcesUI.dummyEnemyLevel > game.global.world) // after portal
+        || (window.RedAcesUI.dummyEnemyLevelHP > game.global.world) // after portal
     ) {
         window.RedAcesUI.dummyEnemyHealth = health;
     } else {
         health = window.RedAcesUI.dummyEnemyHealth;
     }
 
-    window.RedAcesUI.dummyEnemyLevel = game.global.world;
+    window.RedAcesUI.dummyEnemyLevelHP = game.global.world;
 
     if (type === 'None') {
         return health;
@@ -855,6 +925,7 @@ window.RedAcesUI.getTrimpsMinDamage = function() {
 window.RedAcesUI.getTrimpsAvgDamage = function() {
     var parts  = calculateDamage(game.global.soldierCurrentAttack, true, true).split('-'),
         damage = (1 * parts[0] + 1 * parts[1]) / 2;
+
     damage = (1 - getPlayerCritChance()) * damage + getPlayerCritChance() * damage * getPlayerCritDamageMult();
 
     if (!game.global.mapsActive) {
@@ -987,15 +1058,13 @@ window.RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
 
         if (changeAccordingToNeeds) {
             // No Void Map!
-            var numHitsInX = window.RedAcesUI.getNumberOfHitsToKillEnemy('Map', 0);
+            var numHitsInX = window.RedAcesUI.getNumberOfHitsToKillEnemy('Map', 0); // How much hits do we need in X?
             if (numHitsInX <= 1) {
                 // Use scryer if X onehits the enemies
                 return 4;
             }
-            if (numHitsInX > 4) {
-                // Use Dominance if X needs more than 4 hits for the enemies
-                return 2;
-            }
+            // Use Dominance otherwise
+            return 2;
         }
     }
 
@@ -1068,7 +1137,7 @@ window.RedAcesUI.autoPlay = function() {
         setFormation('' + targetFormation)
     }
 
-    window.RedAcesUI.setGeneticistAssist(30, 'RA:autoPlay():');
+    window.RedAcesUI.setGeneticistAssist(opt.geneticistAssist, 'RA:autoPlay():');
 
     // Auto run Maps
     var targetNumHits  = 1,
@@ -1134,45 +1203,48 @@ window.RedAcesUI.autoPlay = function() {
         return;
     }
 
-    if (game.global.world == (opt.voidMapZone - 1)) {
+    if (game.global.world == (opt.voidMapZone - 2)) {
         // Set generator to "Gain Magmite" because we dont need the fuel any more!
         changeGeneratorState(0);
     }
 
-    if ((numHits <= targetNumHits) && game.global.mapsActive) {
-        // less than xx hit per enemy and in map
+    if (numHits <= targetNumHits) {
+        // Our damage is high enough!
 
-        if (game.global.repeatMap) {
+        if (!game.global.mapsActive
+            && (game.global.totalVoidMaps > 0)
+            && (game.global.world == opt.voidMapZone)
+            && (game.global.lastClearedCell >= opt.voidMapCell)
+        ) {
+            // We're ready for the voids!
+            // TODO Toggle "Finish all Voids"
+
+            // Build all available nurseries
+            window.RedAcesUI.build('Nursery', 'Max');
+
+            // Set generator to "Gain Magmite" because we dont need the fuel any more!
+            changeGeneratorState(0);
+
+            message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
+            window.RedAcesUI.runVoidMaps();
+            return;
+        }
+
+        if (game.global.mapsActive && game.global.repeatMap) {
             // "Repeat on" and we're in a map
             message(
                 'RA:autoPlay(): stop z' + game.global.world + ' maps',
                 'Notices'
             );
             repeatClicked();
+            return;
         }
-        return;
-    }
 
-    if ((numHits <= targetNumHits)
-        && !game.global.mapsActive
-        && (game.global.totalVoidMaps > 0)
-        && ((game.global.world == opt.voidMapZone)
-            || ((game.global.world >= opt.voidMapZone) && (game.global.world <= opt.overkillUntilZone))
-        )
-        && (game.global.lastClearedCell >= opt.voidMapCell)
-    ) {
-        // We're ready for the voids!
-        // TODO Toggle "Finish all Voids"
-
-        // Build all available nurseries
-        window.RedAcesUI.build('Nursery', 'Max');
-
-        // Set generator to "Gain Magmite" because we dont need the fuel any more!
-        changeGeneratorState(0);
-
-        message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
-        window.RedAcesUI.runVoidMaps();
-        return;
+        if (!game.global.mapsActive && game.global.preMapsActive) {
+            // In pre-Maps screen
+            mapsClicked();
+            return;
+        }
     }
 };
 
