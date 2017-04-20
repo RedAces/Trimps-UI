@@ -14,8 +14,8 @@ window.RedAcesUI         = window.RedAcesUI || {};
 window.RedAcesUI.options = {
     "autoBuild": {
         "enabled":          true,
-        "warpstationZero":     7,
-        "warpstationDelta":  7.5,
+        "warpstationZero":     8,
+        "warpstationDelta":    8,
         "buildings": {
             "Gym":            -1,
             "Tribute":        -1,
@@ -40,7 +40,7 @@ window.RedAcesUI.options = {
                 "startWorldZone":  240,
                 "buildPerZone":     75,
                 "startAmount":     700,
-                "maxAmount":      2300
+                "maxAmount":      2500
             }
         }
     },
@@ -69,14 +69,14 @@ window.RedAcesUI.options = {
         "voidMapCell":                  90,
         "geneticistAssist":             30,
 
-        "overkillUntilZone":           250,
-        "oneshotUntilZone":            265,
+        "overkillUntilZone":           255,
+        "oneshotUntilZone":            280,
 
-        "scryerUntilZone":             235, // In Scryer
-        "dominanceUntilZone":          265, // In Dominance
+        "scryerUntilZone":             240, // In Scryer
+        "dominanceUntilZone":          270, // In Dominance
 
         // VM in Magma
-        "voidMapZone":                 260,
+        "voidMapZone":                 265,
         "targetVoidMapNumHits":          2,
         "buyGoldenVoidUntil":          230,
         "voidMapFormation":              2, // Dominance
@@ -375,14 +375,22 @@ window.RedAcesUI.autoHireTrimps = function() {
             "Scientist":    1
         };
         jobRatioSum = 211;
-    } else {
+    } else if (game.global.world <= 230) {
         jobRatios   = {
             "Miner":      100,
             "Lumberjack":  50,
             "Farmer":      10,
+            "Scientist":    1
+        };
+        jobRatioSum = 161;
+    } else {
+        jobRatios   = {
+            "Miner":      100,
+            "Lumberjack":  10,
+            "Farmer":      10,
             "Scientist":    0
         };
-        jobRatioSum = 160;
+        jobRatioSum = 120;
     }
 
     if (!game.jobs.hasOwnProperty('Miner') || game.jobs.Miner.locked) {
@@ -1104,12 +1112,12 @@ window.RedAcesUI.autoPlay = function() {
 
     var infoEnemySpan  = document.getElementById('RedAcesUIAutoPlayInfoEnemy'),
         infoDamageSpan = document.getElementById('RedAcesUIAutoPlayInfoDamage'),
-        infoTargetSpan = document.getElementById('RedAcesUIAutoPlayInfoTarget');
+        infoHealthSpan = document.getElementById('RedAcesUIAutoPlayInfoHealth');
 
     if (game.global.world < 10) {
         infoEnemySpan.innerHTML  = 'Starts at z10';
         infoDamageSpan.innerHTML = '';
-        infoTargetSpan.innerHTML = '';
+        infoHealthSpan.innerHTML = '';
         return;
     }
 
@@ -1157,9 +1165,10 @@ window.RedAcesUI.autoPlay = function() {
         enemyText     = 'c99 Void ' + opt.targetEnemy;
     } else if (game.global.world < opt.overkillUntilZone) {
         var overkillDamagePlus   = window.RedAcesUI.getNeededOverkillDamage('None');
+
         infoEnemySpan.innerHTML  = enemyText;
-        infoDamageSpan.innerHTML = 'OK: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsAvgDamage() * 100) + ' %';
-        infoTargetSpan.innerHTML = 'Target: > 0';
+        infoDamageSpan.innerHTML = 'Damage: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsAvgDamage() * 100) + ' % OK';
+        infoHealthSpan.innerHTML = '';
 
         if ((overkillDamagePlus < 0) && !game.global.mapsActive && (game.global.lastClearedCell > 0)) {
             // More than 1 hit per enemy and in no map
@@ -1180,6 +1189,10 @@ window.RedAcesUI.autoPlay = function() {
             );
             repeatClicked();
             return;
+        } else if (!game.global.mapsActive && game.global.preMapsActive) {
+            // In pre-Maps screen
+            mapsClicked();
+            return;
         }
         return;
     } else if (game.global.world >= opt.oneshotUntilZone) {
@@ -1187,8 +1200,8 @@ window.RedAcesUI.autoPlay = function() {
     }
 
     infoEnemySpan.innerHTML  = enemyText;
-    infoDamageSpan.innerHTML = 'Hits: ' + prettify(numHits);
-    infoTargetSpan.innerHTML = 'Target: ' + targetNumHits;
+    infoDamageSpan.innerHTML = 'Hits: ' + prettify(numHits) + ' / ' + targetNumHits;
+    infoHealthSpan.innerHTML = '';
 
     if ((numHits > targetNumHits) && !game.global.mapsActive) {
         // More than xx hit per enemy and in no map
@@ -1507,7 +1520,7 @@ window.RedAcesUI.displayOptions = function() {
         infoDiv.innerHTML       = '<strong>AutoPlay Info</strong>'
             + '<br/><span id="RedAcesUIAutoPlayInfoEnemy"></span>'
             + '<br/><span id="RedAcesUIAutoPlayInfoDamage"></span>'
-            + '<br/><span id="RedAcesUIAutoPlayInfoTarget"></span>';
+            + '<br/><span id="RedAcesUIAutoPlayInfoHealth"></span>';
         infoDiv.style.padding      = '2px 5px';
         infoDiv.style.border       = '1px solid black';
         infoDiv.style.borderRadius = '2px';
