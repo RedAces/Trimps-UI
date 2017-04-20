@@ -72,15 +72,15 @@ RedAcesUI.options = {
 
         // Farming settings
         "overkillUntilZone":           275,
-        "oneshotUntilZone":            280,
-        "healthBuffer":                 40, // Farm enough to withstand x blows / pierces
+        "oneshotUntilZone":            285,
+        "healthBuffer":                 35, // Farm enough to withstand x blows / pierces
 
         // Formation settings
         "scryerUntilZone":             240, // In Scryer
         "dominanceUntilZone":          270, // In Dominance
 
         // Void Maps
-        "voidMapZone":                 275,
+        "voidMapZone":                 280,
         "voidMapCell":                  90,
         "targetVoidMapNumHits":          2,
         "voidMapFormation":              2, // Dominance
