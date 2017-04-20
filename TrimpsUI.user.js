@@ -14,8 +14,8 @@ RedAcesUI         = {};
 RedAcesUI.options = {
     "autoBuild": {
         "enabled":          true,
-        "warpstationZero":     8,
-        "warpstationDelta":    8,
+        "warpstationZero":     7,
+        "warpstationDelta":  7.5,
         "buildings": {
             "Gym":            -1,
             "Tribute":        -1,
@@ -71,16 +71,16 @@ RedAcesUI.options = {
         "targetEnemy":          'Turtlimp',
 
         // Farming settings
-        "overkillUntilZone":           255,
+        "overkillUntilZone":           275,
         "oneshotUntilZone":            280,
-        "healthBuffer":                 20, // Farm enough to withstand x blows / pierces
+        "healthBuffer":                 40, // Farm enough to withstand x blows / pierces
 
         // Formation settings
         "scryerUntilZone":             240, // In Scryer
         "dominanceUntilZone":          270, // In Dominance
 
         // Void Maps
-        "voidMapZone":                 270,
+        "voidMapZone":                 275,
         "voidMapCell":                  90,
         "targetVoidMapNumHits":          2,
         "voidMapFormation":              2, // Dominance
@@ -1001,15 +1001,14 @@ RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
         var mapObj = getCurrentMapObject();
         if (mapObj.location === 'Void') {
             // Void Map!
-            // TODO Test if block is sufficient
             return RedAcesUI.options.autoPlay.voidMapFormation;
         }
 
         if (changeAccordingToNeeds) {
             // No Void Map!
-            var attack = RedAcesUI.getTrimpsAvgAttack(false)
+            var attack = RedAcesUI.getTrimpsAvgAttack(true)
                 / RedAcesUI.getFormationBonus(game.global.formation, 'attack')
-                * RedAcesUI.getFormationBonus(4, 'attack');
+                * RedAcesUI.getFormationBonus(4, 'attack'); // Scryer
 
             if (RedAcesUI.calcDummyEnemyStat('Map', 'health') / attack <= 2) {
                 // Use scryer if it would twohit the enemies
