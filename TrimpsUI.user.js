@@ -66,24 +66,28 @@ RedAcesUI.options = {
     },
     "autoPlay": {
         "enabled":                    true,
-        "voidMapCell":                  90,
         "geneticistAssist":             30,
+        "buyGoldenVoidUntil":          230,
+        "targetEnemy":          'Turtlimp',
 
+        // Farming settings
         "overkillUntilZone":           255,
         "oneshotUntilZone":            280,
+        "healthBuffer":                 20, // Farm enough to withstand x blows / pierces
 
+        // Formation settings
         "scryerUntilZone":             240, // In Scryer
         "dominanceUntilZone":          270, // In Dominance
 
-        // VM in Magma
-        "voidMapZone":                 265,
+        // Void Maps
+        "voidMapZone":                 270,
+        "voidMapCell":                  90,
         "targetVoidMapNumHits":          2,
-        "buyGoldenVoidUntil":          230,
         "voidMapFormation":              2, // Dominance
 
-        "targetEnemy":          'Turtlimp',
+        // Spire
         "targetSpireCell":              99,
-        "targetSpireNumHits":            2
+        "targetSpireNumHits":            1
     }
 };
 
@@ -283,10 +287,7 @@ RedAcesUI.displayEfficiency = function () {
                         && (equipData.level < RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable)
                     ) {
                         // there is a prestige available
-                        // if (RedAcesUI.getNumberOfHitsToKillEnemy('Map') > 1) {
-                            // Only buy equipment if needed, otherwise wait for prestiges!
-                            RedAcesUI.buyEquipment(itemName, 1);
-                        // }
+                        RedAcesUI.buyEquipment(itemName, 1);
                     } else if (equipData.level < RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeUnavailable) {
                         RedAcesUI.buyEquipment(itemName, 1);
                     }
@@ -789,124 +790,73 @@ RedAcesUI.runVoidMaps = function() {
     }
 };
 
-RedAcesUI.dummyEnemyAttack   = 0;
-RedAcesUI.dummyEnemyLevelATK = 0;
+RedAcesUI.dummyEnemy = {
+    'attack': {
+        'level': 0,
+        'value': 0
+    },
+    'health': {
+        'level': 0,
+        'value': 0
+    }
+};
 
 /**
- * get the Attack of an enemy dummy
+ * Calcs the Attack / Health of an enemy dummy
  *
- * Types:
+ * type:
  * 'None'  .. Nothing, not even Void Corruption!
  * 'World' .. Void Corruption
  * 'Map'   .. Void Corruption + 10% Extra difficulty
  * 'Void'  .. Void Corruption + 10% Extra difficulty + 450% Difficulty (Pits)
  * 'Spire' .. Special Calculation
- */
-RedAcesUI.getDummyEnemyAttack = function (type) {
-    if (type === 'Spire') {
-        return getSpireStats(
-            RedAcesUI.options.autoPlay.targetSpireCell,
-            RedAcesUI.options.autoPlay.targetEnemy,
-            'attack'
-        );
-    }
-
-    var attack = game.global.getEnemyAttack(99, RedAcesUI.options.autoPlay.targetEnemy);
-
-    if ((game.global.world > 5) && game.global.mapsActive) {
-        // Maps have 10 % higher stats, we need to offset this
-        attack *= 0.9;
-    }
-
-    if ((RedAcesUI.dummyEnemyAttack < attack)
-        || (RedAcesUI.dummyEnemyLevelATK > game.global.world) // after portal
-    ) {
-        RedAcesUI.dummyEnemyAttack = attack;
-    } else {
-        attack = RedAcesUI.dummyEnemyAttack;
-    }
-
-    RedAcesUI.dummyEnemyLevelATK = game.global.world;
-
-    if (type === 'None') {
-        return attack;
-    }
-
-    attack *= RedAcesUI.getVoidCorruptionMult(type, 'attack');
-
-    if (type === 'World') {
-        // no extras
-    } else if (type === 'Map') {
-        attack *= 1.1;
-    } else if (type === 'Void') {
-        attack *= 1.1 * 4.5;
-    }
-    return attack;
-};
-
-RedAcesUI.dummyEnemyLevelHP = 0;
-RedAcesUI.dummyEnemyHealth  = 0;
-
-/**
- * get the HP of an enemy dummy
  *
- * Types:
- * 'None'  .. Nothing, not even Void Corruption!
- * 'World' .. Void Corruption
- * 'Map'   .. Void Corruption + 10% Extra difficulty
- * 'Void'  .. Void Corruption + 10% Extra difficulty + 450% Difficulty (Pits) - 15% Void Power I - 20% Void Power II
- * 'Spire' .. Special Calculation
+ * stat:
+ * 'health', 'attack'
  */
-RedAcesUI.getDummyEnemyHealth = function (type) {
+RedAcesUI.calcDummyEnemyStat = function (type, stat) {
     if (type === 'Spire') {
         return getSpireStats(
             RedAcesUI.options.autoPlay.targetSpireCell,
             RedAcesUI.options.autoPlay.targetEnemy,
-            'health'
+            stat
         );
     }
 
-    var health = game.global.getEnemyHealth(99, RedAcesUI.options.autoPlay.targetEnemy);
+    var value;
+    if (stat === 'health') {
+        value = game.global.getEnemyHealth(99, RedAcesUI.options.autoPlay.targetEnemy);
+    } else if (stat === 'attack') {
+        value = game.global.getEnemyAttack(99, RedAcesUI.options.autoPlay.targetEnemy);
+    }
 
     if ((game.global.world > 5) && game.global.mapsActive) {
         // Maps have 10 % higher stats, we need to offset this
-        health *= 0.9;
+        value *= 0.9;
     }
 
-    if ((RedAcesUI.dummyEnemyHealth < health)
-        || (RedAcesUI.dummyEnemyLevelHP > game.global.world) // after portal
+    if ((RedAcesUI.dummyEnemy[stat].value < value)
+        || (RedAcesUI.dummyEnemy[stat].level > game.global.world) // after portal
     ) {
-        RedAcesUI.dummyEnemyHealth = health;
+        RedAcesUI.dummyEnemy[stat].value = value;
     } else {
-        health = RedAcesUI.dummyEnemyHealth;
+        value = RedAcesUI.dummyEnemy[stat].value;
     }
 
-    RedAcesUI.dummyEnemyLevelHP = game.global.world;
+    RedAcesUI.dummyEnemy[stat].level = game.global.world;
 
     if (type === 'None') {
-        return health;
+        return value;
     }
 
-    health *= RedAcesUI.getVoidCorruptionMult(type, 'health');
+    value *= RedAcesUI.getVoidCorruptionMult(type, stat);
 
-    if (type === 'World') {
-        // no extras
-    } else if (type === 'Map') {
-        health    *= 1.1;
+    if (type === 'Map') {
+        value *= 1.1;
     } else if (type === 'Void') {
-        health    *= 1.1 * 4.5;
-        var mapObj = getCurrentMapObject();
-        if (!game.global.mapsActive || (mapObj.location !== 'Void')) {
-            // Add Void Power I/II Masteries if not already in VM
-            if (game.talents.voidPower.purchased) {
-                health /= 1.15; // 15 % attack and health
-            }
-            if (game.talents.voidPower2.purchased) { // Void Power II Mastery
-                health /= 1.2; // 20 % attack and health
-            }
-        }
+        value *= 1.1 * 4.5;
     }
-    return health;
+    return value;
 };
 
 /** Returns the min attack of your trimps */
@@ -960,13 +910,13 @@ RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
 
 /** Gets the bonus multiplier of a specific formation for a specific stat */
 RedAcesUI.getFormationBonus = function(formation, stat) {
-    if (formation === 0) {
+    if (formation == 0) {
         // X
         return 1;
     }
 
     if (stat === 'health') {
-        if (formation === 1) {
+        if (formation == 1) {
             // Heap
             return 4;
         } else {
@@ -974,7 +924,7 @@ RedAcesUI.getFormationBonus = function(formation, stat) {
             return 1 / 2;
         }
     } else if (stat === 'attack') {
-        if (formation === 2) {
+        if (formation == 2) {
             // Dominance
             return 4;
         } else {
@@ -982,7 +932,7 @@ RedAcesUI.getFormationBonus = function(formation, stat) {
             return 1 / 2;
         }
     } else if (stat === 'block') {
-        if (formation === 3) {
+        if (formation == 3) {
             // Barrier
             return 4;
         } else {
@@ -992,26 +942,6 @@ RedAcesUI.getFormationBonus = function(formation, stat) {
     }
 
     return 1;
-};
-
-/** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
-RedAcesUI.getNumberOfHitsToKillEnemy = function(type, changeFormationTo) {
-    var numHits = RedAcesUI.getDummyEnemyHealth(type) / RedAcesUI.getTrimpsAvgAttack();
-    if ((typeof changeFormationTo !== 'undefined') && (game.global.formation != changeFormationTo)) {
-        numHits = numHits
-            / RedAcesUI.getFormationBonus(game.global.formation, 'attack')
-            * RedAcesUI.getFormationBonus(changeFormationTo, 'attack');
-    }
-
-    if (type === 'World') {
-        numHits /= (1 + game.global.mapBonus);
-    } else if (type === 'Map') {
-        if (game.global.titimpLeft > 0) {
-            numHits /= 2;
-        }
-    }
-
-    return numHits;
 };
 
 /** Calculates the void corruption multiplicator for a specific stat */
@@ -1062,7 +992,7 @@ RedAcesUI.getVoidCorruptionMult = function(type, stat) {
 
 /** Returns the attack needed to overkill two trimps of a specific type */
 RedAcesUI.getNeededOverkillAttack = function(type) {
-    return RedAcesUI.getDummyEnemyHealth(type) * (1 + 1 / (game.portal.Overkill.level * 0.005));
+    return RedAcesUI.calcDummyEnemyStat(type, 'health') * (1 + 1 / (game.portal.Overkill.level * 0.005));
 };
 
 /** Calculates which formation to use */
@@ -1077,8 +1007,11 @@ RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
 
         if (changeAccordingToNeeds) {
             // No Void Map!
-            var numHitsInX = RedAcesUI.getNumberOfHitsToKillEnemy('Map', 4); // How much hits do we need in S?
-            if (numHitsInX <= 2) {
+            var attack = RedAcesUI.getTrimpsAvgAttack(false)
+                / RedAcesUI.getFormationBonus(game.global.formation, 'attack')
+                * RedAcesUI.getFormationBonus(4, 'attack');
+
+            if (RedAcesUI.calcDummyEnemyStat('Map', 'health') / attack <= 2) {
                 // Use scryer if it would twohit the enemies
                 return 4;
             }
@@ -1166,52 +1099,85 @@ RedAcesUI.autoPlay = function() {
 
     // Auto run Maps
 
-    // TODO get current HP / desired HP & Compare!
-
     var enemyText,
-        currentAttack  = RedAcesUI.getTrimpsAvgAttack(true),
-        targetAttack;
+        currentAttack      = RedAcesUI.getTrimpsAvgAttack(true),
+        targetAttack,
+        currentHealth      = game.global.soldierHealthMax,
+        enemyAttack,
+        enemyPiercePercent = getPierceAmt();
 
     if (game.global.spireActive) {
-        targetAttack = RedAcesUI.getDummyEnemyHealth('Spire') / opt.targetSpireNumHits;
+        targetAttack = RedAcesUI.calcDummyEnemyStat('Spire', 'health') / opt.targetSpireNumHits;
         enemyText    = opt.targetSpireNumHits + '-Hit c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
+        enemyAttack  = RedAcesUI.calcDummyEnemyStat('Spire', 'attack');
+
+        if (!game.global.useShriek) {
+            // use magneto shriek!
+            magnetoShriek();
+        }
     } else if ((game.global.world == opt.voidMapZone)
         && (game.global.lastClearedCell >= opt.voidMapCell)
         && (game.global.totalVoidMaps > 0)
     ) {
-        targetAttack = RedAcesUI.getDummyEnemyHealth('Void') / opt.targetVoidMapNumHits;
+        targetAttack = RedAcesUI.calcDummyEnemyStat('Void', 'health') / opt.targetVoidMapNumHits;
         enemyText    = opt.targetSpireNumHits + '-Hit c99 Void ' + opt.targetEnemy;
+
+        enemyAttack        = RedAcesUI.calcDummyEnemyStat('Void', 'attack');
+        enemyPiercePercent = 0;
+
+        if (!game.global.mapsActive || getCurrentMapObject().location !== 'Void') {
+            // These masteries are already applied if we're in a VM
+            if (game.talents.voidPower.purchased) {
+                currentAttack /= 1.15; // 15 % attack
+                currentHealth *= 1.15; // 15 % health
+            }
+            if (game.talents.voidPower2.purchased) {
+                currentAttack /= 1.2; // 20 % attack
+                currentHealth *= 1.2; // 20 % health
+            }
+        }
     } else if (game.global.world < opt.overkillUntilZone) {
         targetAttack  = RedAcesUI.getNeededOverkillAttack('None');
         currentAttack = RedAcesUI.getTrimpsMinAttack();
         enemyText     = 'OK c99 ' + opt.targetEnemy + 's';
+        enemyAttack   = RedAcesUI.calcDummyEnemyStat('None', 'attack');
     } else {
         var targetNumHits = 1;
         if (game.global.world >= opt.oneshotUntilZone) {
             targetNumHits = 2;
         }
-        targetAttack = RedAcesUI.getDummyEnemyHealth('World') / targetNumHits;
+        targetAttack = RedAcesUI.calcDummyEnemyStat('World', 'health') / targetNumHits;
         enemyText    = targetNumHits + '-Hit c99 ' + opt.targetEnemy;
+        enemyAttack  = RedAcesUI.calcDummyEnemyStat('World', 'attack');
     }
+
+    var damageAfterBlock = Math.max(0, enemyAttack - game.global.soldierCurrentBlock),
+        blockedDamage    = Math.min(enemyAttack, game.global.soldierCurrentBlock);
+
+    damageAfterBlock += blockedDamage * enemyPiercePercent;
+
+    var targetHealth = damageAfterBlock * opt.healthBuffer;
 
     // Sometimes we're not using the formation we're supposed to!
     currentAttack = currentAttack
         / RedAcesUI.getFormationBonus(targetFormation, 'attack')
         * RedAcesUI.getFormationBonus(targetFormationBase, 'attack');
+    currentHealth = currentHealth
+        / RedAcesUI.getFormationBonus(targetFormation, 'health')
+        * RedAcesUI.getFormationBonus(targetFormationBase, 'health');
 
     infoEnemySpan.innerHTML  = enemyText;
     infoAttackSpan.innerHTML = 'A: ' + prettify(currentAttack) + ' / ' + prettify(targetAttack);
-    infoHealthSpan.innerHTML = '';
+    infoHealthSpan.innerHTML = 'H: ' + prettify(currentHealth) + ' / ' + prettify(targetHealth);
 
-    if (targetAttack > currentAttack) {
+    if ((targetAttack > currentAttack) || (targetHealth > currentHealth)) {
         // Farm it!
 
         if (!game.global.mapsActive) {
             // Not farming yet!
             if (!game.global.switchToMaps) {
                 message(
-                    'RA:autoPlay(): run z' + game.global.world + ' maps, need '
-                    + prettify(targetAttack - currentAttack) + ' more attack',
+                    'RA:autoPlay(): run z' + game.global.world + ' maps',
                     'Notices'
                 );
             }
