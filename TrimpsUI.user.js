@@ -10,8 +10,8 @@
 // @include        https://trimps.github.io/*
 // ==/UserScript==
 
-window.RedAcesUI         = window.RedAcesUI || {};
-window.RedAcesUI.options = {
+RedAcesUI         = {};
+RedAcesUI.options = {
     "autoBuild": {
         "enabled":          true,
         "warpstationZero":     8,
@@ -89,7 +89,7 @@ window.RedAcesUI.options = {
 
 /** Prestige efficiency calculation */
 
-window.RedAcesUI.attackAfterPrestige = function(base, prestige) {
+RedAcesUI.attackAfterPrestige = function(base, prestige) {
     if (prestige <= 0) {
         // prestige == 0 => no prestige (so Prestige I)
         return base;
@@ -98,7 +98,7 @@ window.RedAcesUI.attackAfterPrestige = function(base, prestige) {
     return base * 11.51 * Math.pow(9.59, prestige - 1);
 };
 
-window.RedAcesUI.healthAfterPrestige = function(base, prestige) {
+RedAcesUI.healthAfterPrestige = function(base, prestige) {
     if (prestige <= 0) {
         // prestige == 0 => no prestige (so Prestige I)
         return base;
@@ -108,7 +108,7 @@ window.RedAcesUI.healthAfterPrestige = function(base, prestige) {
 };
 
 /** Buy x equipment levels */
-window.RedAcesUI.buyEquipment = function(equipmentName, amount) {
+RedAcesUI.buyEquipment = function(equipmentName, amount) {
     if (!game.equipment.hasOwnProperty(equipmentName) || game.equipment[equipmentName].locked) {
         return;
     }
@@ -125,27 +125,27 @@ window.RedAcesUI.buyEquipment = function(equipmentName, amount) {
 };
 
 /** calculates the Artisanistry multiplicator for all thingies */
-window.RedAcesUI.getArtisanistryMult = function() {
+RedAcesUI.getArtisanistryMult = function() {
     return Math.pow(1 - game.portal.Artisanistry.modifier, game.portal.Artisanistry.level);
 };
 
 /** calculates the Resourceful multiplicator for all structures */
-window.RedAcesUI.getResourcefulMult = function() {
+RedAcesUI.getResourcefulMult = function() {
     return Math.pow(1 - game.portal.Resourceful.modifier, game.portal.Resourceful.level);
 };
 
 /** calculates the cost for all thingies (without cost mult!) */
-window.RedAcesUI.calcCost = function(cost, level) {
-    // e. g. window.RedAcesUI.calcCost(game.buildings.Warpstation.cost.metal, 100)
+RedAcesUI.calcCost = function(cost, level) {
+    // e. g. RedAcesUI.calcCost(game.buildings.Warpstation.cost.metal, 100)
     return cost[0] * Math.pow(cost[1], level);
 };
 
 /** Equipment efficiency */
-window.RedAcesUI.displayEfficiency = function () {
-    if (!window.RedAcesUI.options.displayEfficiency.enabled && !window.RedAcesUI.options.autoBuyEquipment.enabled) {
+RedAcesUI.displayEfficiency = function () {
+    if (!RedAcesUI.options.displayEfficiency.enabled && !RedAcesUI.options.autoBuyEquipment.enabled) {
         return;
     }
-    var costMult = window.RedAcesUI.getArtisanistryMult(),
+    var costMult = RedAcesUI.getArtisanistryMult(),
         items    = {"Health": [], "Attack": []},
         itemName,
         stat,
@@ -178,7 +178,7 @@ window.RedAcesUI.displayEfficiency = function () {
         }
 
         var resource     = Object.keys(data.cost)[0],
-            cost         = window.RedAcesUI.calcCost(data.cost[resource], data.level) * costMult,
+            cost         = RedAcesUI.calcCost(data.cost[resource], data.level) * costMult,
             costPerValue = cost / gain;
 
         if ((resource !== 'metal') || (gain == 0)) {
@@ -215,10 +215,10 @@ window.RedAcesUI.displayEfficiency = function () {
 
         if (equipData.hasOwnProperty('attack')) {
             stat = 'Attack';
-            gain = window.RedAcesUI.attackAfterPrestige(equipData.attack, upgradeData.done + 1);
+            gain = RedAcesUI.attackAfterPrestige(equipData.attack, upgradeData.done + 1);
         } else if (equipData.hasOwnProperty('health')) {
             stat = 'Health';
-            gain = window.RedAcesUI.healthAfterPrestige(equipData.health, upgradeData.done + 1);
+            gain = RedAcesUI.healthAfterPrestige(equipData.health, upgradeData.done + 1);
         }
 
         items[stat].push({"item": upgradeName, "costPerValue": upgradeData.cost.resources.metal * costMult / gain});
@@ -248,7 +248,7 @@ window.RedAcesUI.displayEfficiency = function () {
                 bestStatEfficiency = items[stat][i].costPerValue;
             }
 
-            if (window.RedAcesUI.options.displayEfficiency.enabled) {
+            if (RedAcesUI.options.displayEfficiency.enabled) {
                 var itemElement = document.getElementById(itemName);
                 if (typeof itemElement === 'undefined') {
                     continue;
@@ -257,7 +257,7 @@ window.RedAcesUI.displayEfficiency = function () {
                 if (i == 0) {
                     itemElement.style.borderColor = 'lightgreen';
                     itemElement.style.color       = 'lightgreen';
-                } else if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
+                } else if (items[stat][i].costPerValue / bestStatEfficiency < RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
                     itemElement.style.borderColor = 'yellow';
                     itemElement.style.color       = 'yellow';
                 } else {
@@ -266,7 +266,7 @@ window.RedAcesUI.displayEfficiency = function () {
                 }
             }
 
-            if (window.RedAcesUI.options.autoBuyEquipment.enabled
+            if (RedAcesUI.options.autoBuyEquipment.enabled
                 && game.equipment.hasOwnProperty(itemName)
                 && game.global.hasOwnProperty('autoPrestiges')
                 && ((game.global.autoPrestiges == 1)
@@ -277,18 +277,18 @@ window.RedAcesUI.displayEfficiency = function () {
                 // 3 ... Auto-Prestige "Weapons First" -> Auto Buy Weapons only
 
                 equipData = game.equipment[itemName];
-                if (items[stat][i].costPerValue / bestStatEfficiency < window.RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
+                if (items[stat][i].costPerValue / bestStatEfficiency < RedAcesUI.options.autoBuyEquipment.maxRelEfficiency) {
                     if (itemPrestiges.hasOwnProperty(itemName)
                         && (itemPrestiges[itemName].allowed > itemPrestiges[itemName].done)
-                        && (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable)
+                        && (equipData.level < RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable)
                     ) {
                         // there is a prestige available
                         // if (RedAcesUI.getNumberOfHitsToKillEnemy('Map') > 1) {
                             // Only buy equipment if needed, otherwise wait for prestiges!
-                            window.RedAcesUI.buyEquipment(itemName, 1);
+                            RedAcesUI.buyEquipment(itemName, 1);
                         // }
-                    } else if (equipData.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeUnavailable) {
-                        window.RedAcesUI.buyEquipment(itemName, 1);
+                    } else if (equipData.level < RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeUnavailable) {
+                        RedAcesUI.buyEquipment(itemName, 1);
                     }
                 }
             }
@@ -298,16 +298,16 @@ window.RedAcesUI.displayEfficiency = function () {
     // Special case: Shield
     if (game.equipment.hasOwnProperty('Shield')
         && !game.equipment.Shield.locked
-        && (game.equipment.Shield.level < window.RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable)
+        && (game.equipment.Shield.level < RedAcesUI.options.autoBuyEquipment.maxLevelPrestigeAvailable)
         && (game.global.hasOwnProperty('autoPrestiges'))
         && (game.global.autoPrestiges == 1) // Auto-Prestige "all"
     ) {
-        window.RedAcesUI.buyEquipment('Shield', 1);
+        RedAcesUI.buyEquipment('Shield', 1);
     }
 };
 
 /** Hires x trimps for a job */
-window.RedAcesUI.hire = function(jobName, amount) {
+RedAcesUI.hire = function(jobName, amount) {
     if (game.global.firing || !game.jobs.hasOwnProperty(jobName) || (game.jobs[jobName].locked)) {
         return
     }
@@ -342,8 +342,8 @@ window.RedAcesUI.hire = function(jobName, amount) {
 };
 
 /** Auto employment of trimps */
-window.RedAcesUI.autoHireTrimps = function() {
-    if (!window.RedAcesUI.options.autoHireTrimps.enabled) {
+RedAcesUI.autoHireTrimps = function() {
+    if (!RedAcesUI.options.autoHireTrimps.enabled) {
         return;
     }
 
@@ -358,7 +358,7 @@ window.RedAcesUI.autoHireTrimps = function() {
 
     if (game.global.mapsActive
         && (mapObj.location === 'Void')
-        && window.RedAcesUI.options.autoHireTrimps.fireAllForVoids
+        && RedAcesUI.options.autoHireTrimps.fireAllForVoids
     ) {
         jobRatios = {
             "Miner":      0,
@@ -416,9 +416,9 @@ window.RedAcesUI.autoHireTrimps = function() {
         maxWorkerTrimps -= game.jobs.Magmamancer.owned;
     }
 
-    window.RedAcesUI.hire('Trainer', 'Max');
-    window.RedAcesUI.hire('Magmamancer', 'Max');
-    window.RedAcesUI.hire('Explorer', 'Max');
+    RedAcesUI.hire('Trainer', 'Max');
+    RedAcesUI.hire('Magmamancer', 'Max');
+    RedAcesUI.hire('Explorer', 'Max');
 
     for (var jobName in jobRatios) {
         if (!jobRatios.hasOwnProperty(jobName) || !game.jobs.hasOwnProperty(jobName)) {
@@ -433,12 +433,12 @@ window.RedAcesUI.autoHireTrimps = function() {
             targetJobEmployees -= 100;
         }
 
-        window.RedAcesUI.hire(jobName, Math.floor(targetJobEmployees - jobEmployees));
+        RedAcesUI.hire(jobName, Math.floor(targetJobEmployees - jobEmployees));
     }
 };
 
 /** Build x buildings */
-window.RedAcesUI.build = function(buildingName, amount) {
+RedAcesUI.build = function(buildingName, amount) {
     if (!game.buildings.hasOwnProperty(buildingName) || game.buildings[buildingName].locked) {
         return;
     }
@@ -460,56 +460,56 @@ window.RedAcesUI.build = function(buildingName, amount) {
 };
 
 /** Auto building Buildings */
-window.RedAcesUI.autoBuild = function() {
-    if (!window.RedAcesUI.options.autoBuild.enabled) {
+RedAcesUI.autoBuild = function() {
+    if (!RedAcesUI.options.autoBuild.enabled) {
         return;
     }
 
-    for (var buildingName in window.RedAcesUI.options.autoBuild.buildings) {
-        if (!window.RedAcesUI.options.autoBuild.buildings.hasOwnProperty(buildingName)
+    for (var buildingName in RedAcesUI.options.autoBuild.buildings) {
+        if (!RedAcesUI.options.autoBuild.buildings.hasOwnProperty(buildingName)
             || !game.buildings.hasOwnProperty(buildingName)
         ) {
             continue;
         }
 
-        var buildingMax    = window.RedAcesUI.options.autoBuild.buildings[buildingName],
+        var buildingMax    = RedAcesUI.options.autoBuild.buildings[buildingName],
             currentAmount  = game.buildings[buildingName].purchased;
 
         if (buildingMax === -1) {
-            window.RedAcesUI.build(buildingName, "Max");
+            RedAcesUI.build(buildingName, "Max");
         } else if (buildingMax > currentAmount) {
-            window.RedAcesUI.build(buildingName, buildingMax - currentAmount);
+            RedAcesUI.build(buildingName, buildingMax - currentAmount);
         }
     }
 
-    if (window.RedAcesUI.options.autoPlay.enabled
-        && (game.global.world == window.RedAcesUI.options.autoPlay.voidMapZone)
+    if (RedAcesUI.options.autoPlay.enabled
+        && (game.global.world == RedAcesUI.options.autoPlay.voidMapZone)
     ) {
-        window.RedAcesUI.build('Nursery', "Max");
+        RedAcesUI.build('Nursery', "Max");
     }
 
     if (game.upgrades.hasOwnProperty('Gigastation') && game.buildings.hasOwnProperty('Warpstation')) {
         var currentGigastation = game.upgrades.Gigastation.done,
             currentWarpstation = game.buildings.Warpstation.purchased,
-            warpstationLimit   = window.RedAcesUI.options.autoBuild.warpstationZero
-                + window.RedAcesUI.options.autoBuild.warpstationDelta * currentGigastation;
+            warpstationLimit   = RedAcesUI.options.autoBuild.warpstationZero
+                + RedAcesUI.options.autoBuild.warpstationDelta * currentGigastation;
 
         if (currentWarpstation < warpstationLimit) {
-            window.RedAcesUI.build('Warpstation', warpstationLimit - currentWarpstation);
+            RedAcesUI.build('Warpstation', warpstationLimit - currentWarpstation);
         } else if (!game.upgrades.Gigastation.locked) {
             buyUpgrade('Gigastation', true, true);
         }
     }
 
-    for (buildingName in window.RedAcesUI.options.autoBuild.cheapBuildings) {
-        if (!window.RedAcesUI.options.autoBuild.cheapBuildings.hasOwnProperty(buildingName)
+    for (buildingName in RedAcesUI.options.autoBuild.cheapBuildings) {
+        if (!RedAcesUI.options.autoBuild.cheapBuildings.hasOwnProperty(buildingName)
             || !game.buildings.hasOwnProperty(buildingName)
             || game.buildings[buildingName].locked
         ) {
             continue;
         }
 
-        var cheapBuildingData = window.RedAcesUI.options.autoBuild.cheapBuildings[buildingName],
+        var cheapBuildingData = RedAcesUI.options.autoBuild.cheapBuildings[buildingName],
             otherBuildingName = cheapBuildingData.otherBuilding;
 
         if (cheapBuildingData.hasOwnProperty('untilWorldZone')
@@ -533,11 +533,11 @@ window.RedAcesUI.autoBuild = function() {
             continue;
         }
 
-        var buildingCost = window.RedAcesUI.calcCost(
+        var buildingCost = RedAcesUI.calcCost(
             game.buildings[buildingName].cost[cheapBuildingData.resource],
             game.buildings[buildingName].purchased
             ),
-            otherCost    = window.RedAcesUI.calcCost(
+            otherCost    = RedAcesUI.calcCost(
                 game.buildings[otherBuildingName].cost[cheapBuildingData.resource],
                 game.buildings[otherBuildingName].purchased
             );
@@ -552,19 +552,19 @@ window.RedAcesUI.autoBuild = function() {
             if (cheapBuildingData.hasOwnProperty('maxAmount')) {
                 amount = Math.min(cheapBuildingData.maxAmount - game.buildings[buildingName].purchased, amount);
             }
-            window.RedAcesUI.build(buildingName, amount);
+            RedAcesUI.build(buildingName, amount);
         }
     }
 
-    for (buildingName in window.RedAcesUI.options.autoBuild.buildByZone) {
-        if (!window.RedAcesUI.options.autoBuild.buildByZone.hasOwnProperty(buildingName)
+    for (buildingName in RedAcesUI.options.autoBuild.buildByZone) {
+        if (!RedAcesUI.options.autoBuild.buildByZone.hasOwnProperty(buildingName)
             || !game.buildings.hasOwnProperty(buildingName)
             || game.buildings[buildingName].locked
         ) {
             continue;
         }
 
-        var buildingData = window.RedAcesUI.options.autoBuild.buildByZone[buildingName];
+        var buildingData = RedAcesUI.options.autoBuild.buildByZone[buildingName];
         if (game.global.world < buildingData.startWorldZone) {
             continue;
         }
@@ -573,13 +573,13 @@ window.RedAcesUI.autoBuild = function() {
 
         targetAmount = Math.min(targetAmount, buildingData.maxAmount);
 
-        window.RedAcesUI.build(buildingName, targetAmount - game.buildings[buildingName].purchased);
+        RedAcesUI.build(buildingName, targetAmount - game.buildings[buildingName].purchased);
     }
 };
 
 /** Auto player employment */
-window.RedAcesUI.autoGather = function() {
-    if (!window.RedAcesUI.options.autoGather.enabled) {
+RedAcesUI.autoGather = function() {
+    if (!RedAcesUI.options.autoGather.enabled) {
         return;
     }
 
@@ -630,8 +630,8 @@ window.RedAcesUI.autoGather = function() {
 };
 
 /** Auto pause game at a certain world level */
-window.RedAcesUI.autoPause = function() {
-    if (!window.RedAcesUI.options.autoPause.enabled) {
+RedAcesUI.autoPause = function() {
+    if (!RedAcesUI.options.autoPause.enabled) {
         return;
     }
 
@@ -641,7 +641,7 @@ window.RedAcesUI.autoPause = function() {
 };
 
 /** Runs a newly bought map */
-window.RedAcesUI.farmMap = function(repeatUntil) {
+RedAcesUI.farmMap = function(repeatUntil) {
     if (game.global.mapsActive) {
         // We're already running a map!
         return 'already running a map';
@@ -685,14 +685,14 @@ window.RedAcesUI.farmMap = function(repeatUntil) {
         toggleSetting('exitTo')
     }
 
-    var existingMap = window.RedAcesUI.selectMap(game.global.world);
+    var existingMap = RedAcesUI.selectMap(game.global.world);
     if (typeof existingMap !== 'undefined') {
         runMap();
     }
 };
 
 /** Selects a map of the requested level. Will use an existing one or buy a new one */
-window.RedAcesUI.selectMap = function (level) {
+RedAcesUI.selectMap = function (level) {
     for (var i in game.global.mapsOwnedArray) {
         if (!game.global.mapsOwnedArray.hasOwnProperty(i)) {
             continue;
@@ -723,7 +723,7 @@ window.RedAcesUI.selectMap = function (level) {
     }
     if (buyMapResult === -3) {
         // Too few fragments, try one level lower
-        return window.RedAcesUI.selectMap(level - 1);
+        return RedAcesUI.selectMap(level - 1);
     }
 
     if (buyMapResult === -2) {
@@ -731,12 +731,12 @@ window.RedAcesUI.selectMap = function (level) {
         recycleBelow(true);
 
         // try again!
-        return window.RedAcesUI.selectMap(level);
+        return RedAcesUI.selectMap(level);
     }
 };
 
 /** Runs all void maps */
-window.RedAcesUI.runVoidMaps = function() {
+RedAcesUI.runVoidMaps = function() {
     if (game.global.mapsActive) {
         // We're already running a map!
         return 'already running a map';
@@ -789,8 +789,8 @@ window.RedAcesUI.runVoidMaps = function() {
     }
 };
 
-window.RedAcesUI.dummyEnemyAttack   = 0;
-window.RedAcesUI.dummyEnemyLevelATK = 0;
+RedAcesUI.dummyEnemyAttack   = 0;
+RedAcesUI.dummyEnemyLevelATK = 0;
 
 /**
  * get the Attack of an enemy dummy
@@ -802,7 +802,7 @@ window.RedAcesUI.dummyEnemyLevelATK = 0;
  * 'Void'  .. Void Corruption + 10% Extra difficulty + 450% Difficulty (Pits)
  * 'Spire' .. Special Calculation
  */
-window.RedAcesUI.getDummyEnemyAttack = function (type) {
+RedAcesUI.getDummyEnemyAttack = function (type) {
     if (type === 'Spire') {
         return getSpireStats(
             RedAcesUI.options.autoPlay.targetSpireCell,
@@ -811,28 +811,28 @@ window.RedAcesUI.getDummyEnemyAttack = function (type) {
         );
     }
 
-    var attack = game.global.getEnemyAttack(99, window.RedAcesUI.options.autoPlay.targetEnemy);
+    var attack = game.global.getEnemyAttack(99, RedAcesUI.options.autoPlay.targetEnemy);
 
     if ((game.global.world > 5) && game.global.mapsActive) {
         // Maps have 10 % higher stats, we need to offset this
         attack *= 0.9;
     }
 
-    if ((window.RedAcesUI.dummyEnemyAttack < attack)
-        || (window.RedAcesUI.dummyEnemyLevelATK > game.global.world) // after portal
+    if ((RedAcesUI.dummyEnemyAttack < attack)
+        || (RedAcesUI.dummyEnemyLevelATK > game.global.world) // after portal
     ) {
-        window.RedAcesUI.dummyEnemyAttack = attack;
+        RedAcesUI.dummyEnemyAttack = attack;
     } else {
-        attack = window.RedAcesUI.dummyEnemyAttack;
+        attack = RedAcesUI.dummyEnemyAttack;
     }
 
-    window.RedAcesUI.dummyEnemyLevelATK = game.global.world;
+    RedAcesUI.dummyEnemyLevelATK = game.global.world;
 
     if (type === 'None') {
         return attack;
     }
 
-    attack *= RedAcesUI.getVoidCorruptionAttackMult(type);
+    attack *= RedAcesUI.getVoidCorruptionMult(type, 'attack');
 
     if (type === 'World') {
         // no extras
@@ -844,13 +844,8 @@ window.RedAcesUI.getDummyEnemyAttack = function (type) {
     return attack;
 };
 
-/** Calculations the void corruption multiplicator for the attack */
-window.RedAcesUI.getVoidCorruptionAttackMult = function(type) {
-    return window.RedAcesUI.getVoidCorruptionHealthMult(type) / 10 * 3;
-};
-
-window.RedAcesUI.dummyEnemyLevelHP = 0;
-window.RedAcesUI.dummyEnemyHealth  = 0;
+RedAcesUI.dummyEnemyLevelHP = 0;
+RedAcesUI.dummyEnemyHealth  = 0;
 
 /**
  * get the HP of an enemy dummy
@@ -862,7 +857,7 @@ window.RedAcesUI.dummyEnemyHealth  = 0;
  * 'Void'  .. Void Corruption + 10% Extra difficulty + 450% Difficulty (Pits) - 15% Void Power I - 20% Void Power II
  * 'Spire' .. Special Calculation
  */
-window.RedAcesUI.getDummyEnemyHealth = function (type) {
+RedAcesUI.getDummyEnemyHealth = function (type) {
     if (type === 'Spire') {
         return getSpireStats(
             RedAcesUI.options.autoPlay.targetSpireCell,
@@ -871,28 +866,28 @@ window.RedAcesUI.getDummyEnemyHealth = function (type) {
         );
     }
 
-    var health = game.global.getEnemyHealth(99, window.RedAcesUI.options.autoPlay.targetEnemy);
+    var health = game.global.getEnemyHealth(99, RedAcesUI.options.autoPlay.targetEnemy);
 
     if ((game.global.world > 5) && game.global.mapsActive) {
         // Maps have 10 % higher stats, we need to offset this
         health *= 0.9;
     }
 
-    if ((window.RedAcesUI.dummyEnemyHealth < health)
-        || (window.RedAcesUI.dummyEnemyLevelHP > game.global.world) // after portal
+    if ((RedAcesUI.dummyEnemyHealth < health)
+        || (RedAcesUI.dummyEnemyLevelHP > game.global.world) // after portal
     ) {
-        window.RedAcesUI.dummyEnemyHealth = health;
+        RedAcesUI.dummyEnemyHealth = health;
     } else {
-        health = window.RedAcesUI.dummyEnemyHealth;
+        health = RedAcesUI.dummyEnemyHealth;
     }
 
-    window.RedAcesUI.dummyEnemyLevelHP = game.global.world;
+    RedAcesUI.dummyEnemyLevelHP = game.global.world;
 
     if (type === 'None') {
         return health;
     }
 
-    health *= RedAcesUI.getVoidCorruptionHealthMult(type);
+    health *= RedAcesUI.getVoidCorruptionMult(type, 'health');
 
     if (type === 'World') {
         // no extras
@@ -904,51 +899,53 @@ window.RedAcesUI.getDummyEnemyHealth = function (type) {
         if (!game.global.mapsActive || (mapObj.location !== 'Void')) {
             // Add Void Power I/II Masteries if not already in VM
             if (game.talents.voidPower.purchased) {
-                health /= 1.15; // 15 % damage and health
+                health /= 1.15; // 15 % attack and health
             }
             if (game.talents.voidPower2.purchased) { // Void Power II Mastery
-                health /= 1.2; // 20 % damage and health
+                health /= 1.2; // 20 % attack and health
             }
         }
     }
     return health;
 };
 
-/** Returns the min damage of your trimps */
-window.RedAcesUI.getTrimpsMinDamage = function() {
-    var damage = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0];
+/** Returns the min attack of your trimps */
+RedAcesUI.getTrimpsMinAttack = function() {
+    var attack = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0];
 
     if (!game.global.mapsActive) {
-        damage /= (1 + game.global.mapBonus * 0.2);
+        attack /= (1 + game.global.mapBonus * 0.2);
     }
 
     if (game.global.titimpLeft > 0) {
-        damage /= 2;
+        attack /= 2;
     }
 
-    return damage;
+    return attack;
 };
 
-/** Returns the avg damage of your trimps (with crits) */
-window.RedAcesUI.getTrimpsAvgDamage = function() {
+/** Returns the avg attack of your trimps (optionally with crits) */
+RedAcesUI.getTrimpsAvgAttack = function(crits) {
     var parts  = calculateDamage(game.global.soldierCurrentAttack, true, true).split('-'),
-        damage = (1 * parts[0] + 1 * parts[1]) / 2;
+        attack = (1 * parts[0] + 1 * parts[1]) / 2;
 
-    damage = (1 - getPlayerCritChance()) * damage + getPlayerCritChance() * damage * getPlayerCritDamageMult();
+    if (crits) {
+        attack = (1 - getPlayerCritChance()) * attack + getPlayerCritChance() * attack * getPlayerCritDamageMult();
+    }
 
     if (!game.global.mapsActive) {
-        damage /= (1 + game.global.mapBonus * 0.2);
+        attack /= (1 + game.global.mapBonus * 0.2);
     }
 
     if (game.global.titimpLeft > 0) {
-        damage /= 2;
+        attack /= 2;
     }
 
-    return damage;
+    return attack;
 };
 
 /** sets the timer of the Geneticist Assist to x seconds */
-window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
+RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
     if (!game.jobs.Geneticist.locked && (game.global.GeneticistassistSetting != seconds)) {
         if (game.global.GeneticistassistSteps.indexOf(seconds) === -1) {
             game.global.GeneticistassistSteps = [-1, 1, 10, seconds];
@@ -961,31 +958,49 @@ window.RedAcesUI.setGeneticistAssist = function(seconds, messageSuffix) {
     }
 };
 
-/** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
-window.RedAcesUI.getNumberOfHitsToKillEnemy = function(type, changeFormationTo) {
-    var numHits = window.RedAcesUI.getDummyEnemyHealth(type) / window.RedAcesUI.getTrimpsAvgDamage();
-    if ((typeof changeFormationTo !== 'undefined') && (game.global.formation != changeFormationTo)) {
-        // Calc in X Formation
-        if (game.global.formation == 1) {
-            numHits /= 2;
-        } else if (game.global.formation == 2) {
-            numHits *= 4;
-        } else if (game.global.formation == 3) {
-            numHits /= 2;
-        } else if (game.global.formation == 4) {
-            numHits /= 2;
-        }
+/** Gets the bonus multiplier of a specific formation for a specific stat */
+RedAcesUI.getFormationBonus = function(formation, stat) {
+    if (formation === 0) {
+        // X
+        return 1;
+    }
 
-        // Calc in target formation
-        if (changeFormationTo == 1) {
-            numHits *= 2;
-        } else if (changeFormationTo == 2) {
-            numHits /= 4;
-        } else if (changeFormationTo == 3) {
-            numHits *= 2;
-        } else if (changeFormationTo == 4) {
-            numHits *= 2;
+    if (stat === 'health') {
+        if (formation === 1) {
+            // Heap
+            return 4;
+        } else {
+            // Dominance, Barrier, Scryer
+            return 1 / 2;
         }
+    } else if (stat === 'attack') {
+        if (formation === 2) {
+            // Dominance
+            return 4;
+        } else {
+            // Heap, Barrier, Scryer
+            return 1 / 2;
+        }
+    } else if (stat === 'block') {
+        if (formation === 3) {
+            // Barrier
+            return 4;
+        } else {
+            // Heap, Dominance, Scryer
+            return 1 / 2;
+        }
+    }
+
+    return 1;
+};
+
+/** calculates how much hits your trimps have to do to kill an Turtlimp on cell 99 */
+RedAcesUI.getNumberOfHitsToKillEnemy = function(type, changeFormationTo) {
+    var numHits = RedAcesUI.getDummyEnemyHealth(type) / RedAcesUI.getTrimpsAvgAttack();
+    if ((typeof changeFormationTo !== 'undefined') && (game.global.formation != changeFormationTo)) {
+        numHits = numHits
+            / RedAcesUI.getFormationBonus(game.global.formation, 'attack')
+            * RedAcesUI.getFormationBonus(changeFormationTo, 'attack');
     }
 
     if (type === 'World') {
@@ -999,10 +1014,11 @@ window.RedAcesUI.getNumberOfHitsToKillEnemy = function(type, changeFormationTo) 
     return numHits;
 };
 
-/** Calculations the void corruption multiplicator for the health */
-window.RedAcesUI.getVoidCorruptionHealthMult = function(type) {
+/** Calculates the void corruption multiplicator for a specific stat */
+RedAcesUI.getVoidCorruptionMult = function(type, stat) {
     var corruptionStart     = 180,
-        corruptionBaseLevel = 150;
+        corruptionBaseLevel = 150,
+        baseMult            = 1;
 
     if (game.global.challengeActive === 'Corrupted') {
         corruptionStart     = 60;
@@ -1010,11 +1026,17 @@ window.RedAcesUI.getVoidCorruptionHealthMult = function(type) {
     }
 
     // No "Void Corruption" yet
-    if (game.global.world < corruptionStart) {
+    if ((game.global.world < corruptionStart) || (type === 'Spire')) {
         return 1;
     }
 
-    var voidCorruption = 10 * Math.pow(1.05, Math.floor((game.global.world - corruptionBaseLevel) / 6));
+    if (stat === 'attack') {
+        baseMult = 10;
+    } else if (stat === 'health') {
+        baseMult = 3;
+    }
+
+    var voidCorruption = baseMult * Math.pow(1.05, Math.floor((game.global.world - corruptionBaseLevel) / 6));
 
     // Type:
     // 'World' .. Void Corruption is applied fully
@@ -1035,27 +1057,16 @@ window.RedAcesUI.getVoidCorruptionHealthMult = function(type) {
             voidCorruption /= 2;
         }
         return voidCorruption;
-    } else if (type === 'Spire') {
-        return 1;
     }
 };
 
-/**
- * Returns the damage needed to overkill two trimps
- *
- * if its >= 0 -> overkill!
- * if its < 0  -> no overkill!
- */
-window.RedAcesUI.getNeededOverkillDamage = function(type) {
-    var enemyHealth     = window.RedAcesUI.getDummyEnemyHealth(type),
-        trampleDamage   = window.RedAcesUI.getTrimpsMinDamage() - enemyHealth,
-        overkillPercent = game.portal.Overkill.level * 0.005;
-
-    return (trampleDamage * overkillPercent - enemyHealth) / overkillPercent;
+/** Returns the attack needed to overkill two trimps of a specific type */
+RedAcesUI.getNeededOverkillAttack = function(type) {
+    return RedAcesUI.getDummyEnemyHealth(type) * (1 + 1 / (game.portal.Overkill.level * 0.005));
 };
 
 /** Calculates which formation to use */
-window.RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
+RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
     if (game.global.mapsActive) {
         var mapObj = getCurrentMapObject();
         if (mapObj.location === 'Void') {
@@ -1066,9 +1077,9 @@ window.RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
 
         if (changeAccordingToNeeds) {
             // No Void Map!
-            var numHitsInX = window.RedAcesUI.getNumberOfHitsToKillEnemy('Map', 0); // How much hits do we need in X?
-            if (numHitsInX <= 1) {
-                // Use scryer if X onehits the enemies
+            var numHitsInX = RedAcesUI.getNumberOfHitsToKillEnemy('Map', 4); // How much hits do we need in S?
+            if (numHitsInX <= 2) {
+                // Use scryer if it would twohit the enemies
                 return 4;
             }
             // Use Dominance otherwise
@@ -1103,20 +1114,20 @@ window.RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
 };
 
 /** Plays the game for you */
-window.RedAcesUI.autoPlay = function() {
-    var opt = window.RedAcesUI.options.autoPlay;
+RedAcesUI.autoPlay = function() {
+    var opt = RedAcesUI.options.autoPlay;
     if (!opt.enabled) {
         // nothing to do here
         return;
     }
 
     var infoEnemySpan  = document.getElementById('RedAcesUIAutoPlayInfoEnemy'),
-        infoDamageSpan = document.getElementById('RedAcesUIAutoPlayInfoDamage'),
+        infoAttackSpan = document.getElementById('RedAcesUIAutoPlayInfoAttack'),
         infoHealthSpan = document.getElementById('RedAcesUIAutoPlayInfoHealth');
 
     if (game.global.world < 10) {
         infoEnemySpan.innerHTML  = 'Starts at z10';
-        infoDamageSpan.innerHTML = '';
+        infoAttackSpan.innerHTML = '';
         infoHealthSpan.innerHTML = '';
         return;
     }
@@ -1138,130 +1149,117 @@ window.RedAcesUI.autoPlay = function() {
     }
 
     // Auto-Stance
-    var targetFormation = RedAcesUI.getDesiredFormation(true);
+    var targetFormation     = RedAcesUI.getDesiredFormation(true),
+        targetFormationBase = RedAcesUI.getDesiredFormation(false);
 
     if ((game.upgrades.Formations.allowed) && (game.global.formation != targetFormation) && (game.global.world >= 60)) {
         message('RA:autoPlay(): setting formation to ' + targetFormation, 'Notices');
         setFormation('' + targetFormation)
     }
 
-    window.RedAcesUI.setGeneticistAssist(opt.geneticistAssist, 'RA:autoPlay():');
-
-    // Auto run Maps
-    var targetNumHits  = 1,
-        numHits        = window.RedAcesUI.getNumberOfHitsToKillEnemy('World', RedAcesUI.getDesiredFormation(false)),
-        enemyText      = 'c99 ' + opt.targetEnemy;
-
-    if (game.global.spireActive) {
-        targetNumHits = opt.targetSpireNumHits;
-        numHits       = RedAcesUI.getNumberOfHitsToKillEnemy('Spire', 2);
-        enemyText     = 'c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
-    } else if ((game.global.world == opt.voidMapZone)
-        && (game.global.lastClearedCell >= opt.voidMapCell)
-        && (game.global.totalVoidMaps > 0)
-    ) {
-        targetNumHits = opt.targetVoidMapNumHits;
-        numHits       = window.RedAcesUI.getNumberOfHitsToKillEnemy('Void', opt.voidMapFormation);
-        enemyText     = 'c99 Void ' + opt.targetEnemy;
-    } else if (game.global.world < opt.overkillUntilZone) {
-        var overkillDamagePlus   = window.RedAcesUI.getNeededOverkillDamage('None');
-
-        infoEnemySpan.innerHTML  = enemyText;
-        infoDamageSpan.innerHTML = 'Damage: ' + prettify(overkillDamagePlus / window.RedAcesUI.getTrimpsAvgDamage() * 100) + ' % OK';
-        infoHealthSpan.innerHTML = '';
-
-        if ((overkillDamagePlus < 0) && !game.global.mapsActive && (game.global.lastClearedCell > 0)) {
-            // More than 1 hit per enemy and in no map
-            if (!game.global.switchToMaps) {
-                message(
-                    'RA:autoPlay(): run z' + game.global.world + ' maps, need ' + prettify(Math.abs(overkillDamagePlus))
-                    + ' more damage to Overkill',
-                    'Notices'
-                );
-            }
-            window.RedAcesUI.farmMap(0); // Repeat forever
-            return;
-        } else if ((overkillDamagePlus >= 0) && game.global.mapsActive && game.global.repeatMap) {
-            // less than 1 hit per enemy, in map and "repeat on"
-            message(
-                'RA:autoPlay(): stop z' + game.global.world + ' maps',
-                'Notices'
-            );
-            repeatClicked();
-            return;
-        } else if (!game.global.mapsActive && game.global.preMapsActive) {
-            // In pre-Maps screen
-            mapsClicked();
-            return;
-        }
-        return;
-    } else if (game.global.world >= opt.oneshotUntilZone) {
-        targetNumHits = 2;
-    }
-
-    infoEnemySpan.innerHTML  = enemyText;
-    infoDamageSpan.innerHTML = 'Hits: ' + prettify(numHits) + ' / ' + targetNumHits;
-    infoHealthSpan.innerHTML = '';
-
-    if ((numHits > targetNumHits) && !game.global.mapsActive) {
-        // More than xx hit per enemy and in no map
-        if (!game.global.switchToMaps) {
-            message(
-                'RA:autoPlay(): run z' + game.global.world + ' maps, need ' + prettify(numHits) + ' hits per '
-                + enemyText + ' (target: <= ' + targetNumHits + ')',
-                'Notices'
-            );
-        }
-        window.RedAcesUI.farmMap(0); // Repeat forever
-        return;
-    }
+    RedAcesUI.setGeneticistAssist(opt.geneticistAssist, 'RA:autoPlay():');
 
     if (game.global.world == (opt.voidMapZone - 2)) {
         // Set generator to "Gain Magmite" because we dont need the fuel any more!
         changeGeneratorState(0);
     }
 
-    if (numHits <= targetNumHits) {
-        // Our damage is high enough!
+    // Auto run Maps
 
-        if (!game.global.mapsActive
-            && (game.global.totalVoidMaps > 0)
-            && (game.global.world == opt.voidMapZone)
-            && (game.global.lastClearedCell >= opt.voidMapCell)
-        ) {
-            // We're ready for the voids!
+    // TODO get current HP / desired HP & Compare!
+
+    var enemyText,
+        currentAttack  = RedAcesUI.getTrimpsAvgAttack(true),
+        targetAttack;
+
+    if (game.global.spireActive) {
+        targetAttack = RedAcesUI.getDummyEnemyHealth('Spire') / opt.targetSpireNumHits;
+        enemyText    = opt.targetSpireNumHits + '-Hit c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
+    } else if ((game.global.world == opt.voidMapZone)
+        && (game.global.lastClearedCell >= opt.voidMapCell)
+        && (game.global.totalVoidMaps > 0)
+    ) {
+        targetAttack = RedAcesUI.getDummyEnemyHealth('Void') / opt.targetVoidMapNumHits;
+        enemyText    = opt.targetSpireNumHits + '-Hit c99 Void ' + opt.targetEnemy;
+    } else if (game.global.world < opt.overkillUntilZone) {
+        targetAttack  = RedAcesUI.getNeededOverkillAttack('None');
+        currentAttack = RedAcesUI.getTrimpsMinAttack();
+        enemyText     = 'OK c99 ' + opt.targetEnemy + 's';
+    } else {
+        var targetNumHits = 1;
+        if (game.global.world >= opt.oneshotUntilZone) {
+            targetNumHits = 2;
+        }
+        targetAttack = RedAcesUI.getDummyEnemyHealth('World') / targetNumHits;
+        enemyText    = targetNumHits + '-Hit c99 ' + opt.targetEnemy;
+    }
+
+    // Sometimes we're not using the formation we're supposed to!
+    currentAttack = currentAttack
+        / RedAcesUI.getFormationBonus(targetFormation, 'attack')
+        * RedAcesUI.getFormationBonus(targetFormationBase, 'attack');
+
+    infoEnemySpan.innerHTML  = enemyText;
+    infoAttackSpan.innerHTML = 'A: ' + prettify(currentAttack) + ' / ' + prettify(targetAttack);
+    infoHealthSpan.innerHTML = '';
+
+    if (targetAttack > currentAttack) {
+        // Farm it!
+
+        if (!game.global.mapsActive) {
+            // Not farming yet!
+            if (!game.global.switchToMaps) {
+                message(
+                    'RA:autoPlay(): run z' + game.global.world + ' maps, need '
+                    + prettify(targetAttack - currentAttack) + ' more attack',
+                    'Notices'
+                );
+            }
+            RedAcesUI.farmMap(0); // Repeat forever
+        }
+        return;
+    }
+
+    // We've farmed enough!
+
+    if ((game.global.totalVoidMaps > 0)
+        && (game.global.world == opt.voidMapZone)
+        && (game.global.lastClearedCell >= opt.voidMapCell)
+    ) {
+        // We're ready for the voids!
+        if (!game.global.mapsActive) {
             // TODO Toggle "Finish all Voids"
 
             // Build all available nurseries
-            window.RedAcesUI.build('Nursery', 'Max');
+            RedAcesUI.build('Nursery', 'Max');
 
             // Set generator to "Gain Magmite" because we dont need the fuel any more!
             changeGeneratorState(0);
 
             message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
-            window.RedAcesUI.runVoidMaps();
-            return;
+            RedAcesUI.runVoidMaps();
         }
+        return;
+    }
 
-        if (game.global.mapsActive && game.global.repeatMap) {
-            // "Repeat on" and we're in a map
-            message(
-                'RA:autoPlay(): stop z' + game.global.world + ' maps',
-                'Notices'
-            );
-            repeatClicked();
-            return;
-        }
+    if (game.global.mapsActive && game.global.repeatMap) {
+        // "Repeat on" and we're in a map
+        message(
+            'RA:autoPlay(): stop z' + game.global.world + ' maps',
+            'Notices'
+        );
+        repeatClicked();
+        return;
+    }
 
-        if (!game.global.mapsActive && game.global.preMapsActive) {
-            // In pre-Maps screen
-            mapsClicked();
-            return;
-        }
+    if (!game.global.mapsActive && game.global.preMapsActive) {
+        // In pre-Maps screen, waiting for ... something?
+        mapsClicked();
+        return;
     }
 };
 
-window.RedAcesUI.calcWarpstationStrategy = function() {
+RedAcesUI.calcWarpstationStrategy = function() {
     if (!game.buildings.hasOwnProperty('Warpstation')
         || !game.upgrades.hasOwnProperty('Gigastation')
     ) {
@@ -1282,8 +1280,8 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
         // cost for 1 warpstation at max Gigastations
         warpstationBaseMetalCost = game.buildings.Warpstation.cost.metal[0]
             * Math.pow(1.75, gigastationAllowed - gigastationCurrent)
-            * window.RedAcesUI.getArtisanistryMult()
-            * window.RedAcesUI.getResourcefulMult(),
+            * RedAcesUI.getArtisanistryMult()
+            * RedAcesUI.getResourcefulMult(),
 
         // Amount of warpstation for 1 minute worth of metal farming
         targetWarpstationCount   = Math.log(farmMinutes * metalPerMinute / warpstationBaseMetalCost) / Math.log(game.buildings.Warpstation.cost.metal[1]),
@@ -1299,32 +1297,32 @@ window.RedAcesUI.calcWarpstationStrategy = function() {
         'Notices'
     );
 
-    if ((window.RedAcesUI.options.autoBuild.warpstationDelta == warpstationDelta)
-        && (window.RedAcesUI.options.autoBuild.warpstationZero < warpstationZero)
+    if ((RedAcesUI.options.autoBuild.warpstationDelta == warpstationDelta)
+        && (RedAcesUI.options.autoBuild.warpstationZero < warpstationZero)
     ) {
-        window.RedAcesUI.options.autoBuild.warpstationZero = warpstationZero;
+        RedAcesUI.options.autoBuild.warpstationZero = warpstationZero;
 
         message(
             'Updating warpstationZero, new Warpstation Strategy is '
-            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta,
+            + RedAcesUI.options.autoBuild.warpstationZero + '+' + RedAcesUI.options.autoBuild.warpstationDelta,
             'Notices'
         );
-    } else if ((window.RedAcesUI.options.autoBuild.warpstationDelta < warpstationDelta)
-        && (window.RedAcesUI.options.autoBuild.warpstationZero != warpstationZero)
+    } else if ((RedAcesUI.options.autoBuild.warpstationDelta < warpstationDelta)
+        && (RedAcesUI.options.autoBuild.warpstationZero != warpstationZero)
     ) {
-        window.RedAcesUI.options.autoBuild.warpstationDelta = warpstationDelta;
-        window.RedAcesUI.options.autoBuild.warpstationZero  = warpstationZero;
+        RedAcesUI.options.autoBuild.warpstationDelta = warpstationDelta;
+        RedAcesUI.options.autoBuild.warpstationZero  = warpstationZero;
 
         message(
             'Updating warpstation strategy, new Warpstation Strategy is '
-            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta,
+            + RedAcesUI.options.autoBuild.warpstationZero + '+' + RedAcesUI.options.autoBuild.warpstationDelta,
             'Notices'
         );
     }
     return warpstationZero + '+' + warpstationDelta;
 };
 
-window.RedAcesUI.calcWarpstationStrategyCurrent = function() {
+RedAcesUI.calcWarpstationStrategyCurrent = function() {
     if (!game.buildings.hasOwnProperty('Warpstation')
         || !game.upgrades.hasOwnProperty('Gigastation')
     ) {
@@ -1347,25 +1345,25 @@ window.RedAcesUI.calcWarpstationStrategyCurrent = function() {
         'Notices'
     );
 
-    if ((window.RedAcesUI.options.autoBuild.warpstationDelta == warpstationDelta)
-        && (window.RedAcesUI.options.autoBuild.warpstationZero < warpstationZero)
+    if ((RedAcesUI.options.autoBuild.warpstationDelta == warpstationDelta)
+        && (RedAcesUI.options.autoBuild.warpstationZero < warpstationZero)
     ) {
-        window.RedAcesUI.options.autoBuild.warpstationZero = warpstationZero;
+        RedAcesUI.options.autoBuild.warpstationZero = warpstationZero;
 
         message(
             'Updating warpstationZero, new Warpstation Strategy is '
-            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta,
+            + RedAcesUI.options.autoBuild.warpstationZero + '+' + RedAcesUI.options.autoBuild.warpstationDelta,
             'Notices'
         );
-    } else if ((window.RedAcesUI.options.autoBuild.warpstationDelta < warpstationDelta)
-        && (window.RedAcesUI.options.autoBuild.warpstationZero != warpstationZero)
+    } else if ((RedAcesUI.options.autoBuild.warpstationDelta < warpstationDelta)
+        && (RedAcesUI.options.autoBuild.warpstationZero != warpstationZero)
     ) {
-        window.RedAcesUI.options.autoBuild.warpstationDelta = warpstationDelta;
-        window.RedAcesUI.options.autoBuild.warpstationZero  = warpstationZero;
+        RedAcesUI.options.autoBuild.warpstationDelta = warpstationDelta;
+        RedAcesUI.options.autoBuild.warpstationZero  = warpstationZero;
 
         message(
             'Updating warpstation strategy, new Warpstation Strategy is '
-            + window.RedAcesUI.options.autoBuild.warpstationZero + '+' + window.RedAcesUI.options.autoBuild.warpstationDelta,
+            + RedAcesUI.options.autoBuild.warpstationZero + '+' + RedAcesUI.options.autoBuild.warpstationDelta,
             'Notices'
         );
     }
@@ -1374,40 +1372,40 @@ window.RedAcesUI.calcWarpstationStrategyCurrent = function() {
 
 /** init main loop */
 
-window.RedAcesUI.inProcess = false;
+RedAcesUI.inProcess = false;
 
-window.RedAcesUI.mainLoop = function() {
-    if (window.RedAcesUI.inProcess) {
+RedAcesUI.mainLoop = function() {
+    if (RedAcesUI.inProcess) {
         return;
     }
-    window.RedAcesUI.inProcess = true;
+    RedAcesUI.inProcess = true;
 
     document.title = 'Trimps z' + game.global.world + '-' + (game.global.lastClearedCell + 2);
     if (getAvailableGoldenUpgrades() > 0) {
         document.title = 'GOLDEN ' + document.title;
     }
 
-    window.RedAcesUI.autoHireTrimps();
-    window.RedAcesUI.autoBuild();
-    window.RedAcesUI.autoGather();
-    window.RedAcesUI.displayEfficiency();
-    window.RedAcesUI.autoPause();
-    window.RedAcesUI.autoPlay();
+    RedAcesUI.autoHireTrimps();
+    RedAcesUI.autoBuild();
+    RedAcesUI.autoGather();
+    RedAcesUI.displayEfficiency();
+    RedAcesUI.autoPause();
+    RedAcesUI.autoPlay();
 
-    window.RedAcesUI.inProcess = false;
+    RedAcesUI.inProcess = false;
 };
 
-window.RedAcesUI.mainTimer = setInterval(
-    window.RedAcesUI.mainLoop,
+RedAcesUI.mainTimer = setInterval(
+    RedAcesUI.mainLoop,
     1000
 );
 
 /** options */
 
-window.RedAcesUI.toggleAutomation = function (what) {
-    window.RedAcesUI.options[what].enabled = !window.RedAcesUI.options[what].enabled;
+RedAcesUI.toggleAutomation = function (what) {
+    RedAcesUI.options[what].enabled = !RedAcesUI.options[what].enabled;
     var button = document.getElementById('RedAcesUIOpt' + what);
-    if (window.RedAcesUI.options[what].enabled) {
+    if (RedAcesUI.options[what].enabled) {
         button.className = button.className.replace('colorSuccess', 'colorDanger');
         button.className = button.className.replace('btn-danger', 'btn-success');
     } else {
@@ -1418,7 +1416,7 @@ window.RedAcesUI.toggleAutomation = function (what) {
     if (what === 'autoPlay') {
         var autoPlayInfoDiv = document.getElementById('RedAcesUIAutoPlayInfo');
         if (autoPlayInfoDiv) {
-            if (window.RedAcesUI.options[what].enabled) {
+            if (RedAcesUI.options[what].enabled) {
                 autoPlayInfoDiv.style.display = 'block';
             } else {
                 autoPlayInfoDiv.style.display = 'none';
@@ -1428,13 +1426,13 @@ window.RedAcesUI.toggleAutomation = function (what) {
 };
 
 /** Show options buttons */
-window.RedAcesUI.displayOptions = function() {
+RedAcesUI.displayOptions = function() {
     var displayButton = function (what, label, where, fullSize, onclickCallback) {
         var button          = document.createElement('div');
         button.innerHTML    = label;
 
-        if (window.RedAcesUI.options.hasOwnProperty(what)) {
-            if (window.RedAcesUI.options[what].enabled) {
+        if (RedAcesUI.options.hasOwnProperty(what)) {
+            if (RedAcesUI.options[what].enabled) {
                 button.className = 'pointer noselect colorSuccess';
             } else {
                 button.className = 'pointer noselect colorDanger';
@@ -1448,7 +1446,7 @@ window.RedAcesUI.displayOptions = function() {
             button.onclick = onclickCallback;
         } else {
             button.onclick = function () {
-                window.RedAcesUI.toggleAutomation(what);
+                RedAcesUI.toggleAutomation(what);
             };
         }
 
@@ -1485,7 +1483,7 @@ window.RedAcesUI.displayOptions = function() {
             'Warpstation Strat',
             buildingsTitleDiv.childNodes[1].childNodes[3],
             false,
-            window.RedAcesUI.calcWarpstationStrategyCurrent
+            RedAcesUI.calcWarpstationStrategyCurrent
         );
     }
 
@@ -1496,7 +1494,7 @@ window.RedAcesUI.displayOptions = function() {
         var toggleBtn        = document.createElement('span'),
             toggleBtnWrapper = document.createElement('div');
 
-        if (window.RedAcesUI.options.autoPlay.enabled) {
+        if (RedAcesUI.options.autoPlay.enabled) {
             toggleBtn.className = 'btn btn-success fightBtn';
         } else {
             toggleBtn.className = 'btn btn-danger fightBtn';
@@ -1505,7 +1503,7 @@ window.RedAcesUI.displayOptions = function() {
         toggleBtn.id        = 'RedAcesUIOpt' + 'autoPlay';
         toggleBtn.innerHTML = 'AutoPlay';
         toggleBtn.onclick   = function () {
-            window.RedAcesUI.toggleAutomation('autoPlay');
+            RedAcesUI.toggleAutomation('autoPlay');
         };
 
         toggleBtnWrapper.className = 'battleSideBtnContainer';
@@ -1518,15 +1516,15 @@ window.RedAcesUI.displayOptions = function() {
         infoDiv.className       = 'battleSideBtnContainer';
         infoDiv.id              = 'RedAcesUIAutoPlayInfo';
         infoDiv.innerHTML       = '<strong>AutoPlay Info</strong>'
-            + '<br/><span id="RedAcesUIAutoPlayInfoEnemy"></span>'
-            + '<br/><span id="RedAcesUIAutoPlayInfoDamage"></span>'
-            + '<br/><span id="RedAcesUIAutoPlayInfoHealth"></span>';
+            + '<br/><span id="RedAcesUIAutoPlayInfoEnemy" style="font-size: 13px"></span>'
+            + '<br/><span id="RedAcesUIAutoPlayInfoAttack" style="font-size: 13px"></span>'
+            + '<br/><span id="RedAcesUIAutoPlayInfoHealth" style="font-size: 13px"></span>';
         infoDiv.style.padding      = '2px 5px';
         infoDiv.style.border       = '1px solid black';
         infoDiv.style.borderRadius = '2px';
         infoDiv.style.textAlign    = 'center';
 
-        if (!window.RedAcesUI.options.autoPlay.enabled) {
+        if (!RedAcesUI.options.autoPlay.enabled) {
             infoDiv.style.display = 'none';
         }
 
@@ -1534,4 +1532,4 @@ window.RedAcesUI.displayOptions = function() {
     }
 };
 
-window.RedAcesUI.displayOptions();
+RedAcesUI.displayOptions();
