@@ -26,7 +26,7 @@ RedAcesUI.options = {
             "Mansion":       100,
             "House":         100,
             "Hut":           100,
-            "Nursery":       700
+            "Nursery":       500
         },
         "cheapBuildings": {
             "Collector": {
@@ -37,10 +37,9 @@ RedAcesUI.options = {
         },
         "buildByZone": {
             "Nursery": {
-                "startWorldZone":  240,
-                "buildPerZone":     75,
-                "startAmount":     700,
-                "maxAmount":      2500
+                "buildPerZone":     50,
+                "startAmount":     500,
+                "maxAmount":      2600
             }
         }
     },
@@ -76,11 +75,11 @@ RedAcesUI.options = {
         "healthBuffer":                 35, // Farm enough to withstand x blows / pierces
 
         // Formation settings
-        "scryerUntilZone":             240, // In Scryer
-        "dominanceUntilZone":          270, // In Dominance
+        "scryerUntilZone":             280, // In Scryer
+        "dominanceUntilZone":          285, // In Dominance
 
         // Void Maps
-        "voidMapZone":                 280,
+        "voidMapZone":                 285,
         "voidMapCell":                  90,
         "targetVoidMapNumHits":          2,
         "voidMapFormation":              2, // Dominance
@@ -150,7 +149,7 @@ RedAcesUI.displayEfficiency = function () {
         return;
     }
     var costMult = RedAcesUI.getArtisanistryMult(),
-        items    = {"Health": [], "Attack": []},
+        items    = {"health": [], "attack": []},
         itemName,
         stat,
         itemPrestiges = {},
@@ -169,10 +168,10 @@ RedAcesUI.displayEfficiency = function () {
 
         if (data.hasOwnProperty('attackCalculated')) {
             gain = data.attackCalculated;
-            stat = 'Attack';
+            stat = 'attack';
         } else if (data.hasOwnProperty('healthCalculated')) {
             gain = data.healthCalculated;
-            stat = 'Health';
+            stat = 'health';
         } else {
             continue;
         }
@@ -218,10 +217,10 @@ RedAcesUI.displayEfficiency = function () {
         var equipData = game.equipment[upgradeData.prestiges];
 
         if (equipData.hasOwnProperty('attack')) {
-            stat = 'Attack';
+            stat = 'attack';
             gain = RedAcesUI.attackAfterPrestige(equipData.attack, upgradeData.done + 1);
         } else if (equipData.hasOwnProperty('health')) {
-            stat = 'Health';
+            stat = 'health';
             gain = RedAcesUI.healthAfterPrestige(equipData.health, upgradeData.done + 1);
         }
 
@@ -274,7 +273,7 @@ RedAcesUI.displayEfficiency = function () {
                 && game.equipment.hasOwnProperty(itemName)
                 && game.global.hasOwnProperty('autoPrestiges')
                 && ((game.global.autoPrestiges == 1)
-                    || (((game.global.autoPrestiges == 2) || (game.global.autoPrestiges == 3)) && (stat == 'Attack')))
+                    || (((game.global.autoPrestiges == 2) || (game.global.autoPrestiges == 3)) && (stat == 'attack')))
             ) {
                 // 1 ... Auto-Prestige "all"
                 // 2 ... Auto-Prestige "Weapons Only" -> Auto Buy Weapons only
@@ -483,12 +482,6 @@ RedAcesUI.autoBuild = function() {
         }
     }
 
-    if (RedAcesUI.options.autoPlay.enabled
-        && (game.global.world == RedAcesUI.options.autoPlay.voidMapZone)
-    ) {
-        RedAcesUI.build('Nursery', "Max");
-    }
-
     if (game.upgrades.hasOwnProperty('Gigastation') && game.buildings.hasOwnProperty('Warpstation')) {
         var currentGigastation = game.upgrades.Gigastation.done,
             currentWarpstation = game.buildings.Warpstation.purchased,
@@ -565,12 +558,13 @@ RedAcesUI.autoBuild = function() {
             continue;
         }
 
-        var buildingData = RedAcesUI.options.autoBuild.buildByZone[buildingName];
-        if (game.global.world < buildingData.startWorldZone) {
+        var buildingData   = RedAcesUI.options.autoBuild.buildByZone[buildingName],
+            zones          = (buildingData.maxAmount - buildingData.startAmount) / buildingData.buildPerZone,
+            startWorldZone = RedAcesUI.options.autoPlay.voidMapZone - zones;
+        if (game.global.world < startWorldZone) {
             continue;
         }
-        var targetAmount = buildingData.startAmount
-            + (game.global.world - buildingData.startWorldZone) * buildingData.buildPerZone;
+        var targetAmount = buildingData.startAmount + (game.global.world - startWorldZone) * buildingData.buildPerZone;
 
         targetAmount = Math.min(targetAmount, buildingData.maxAmount);
 
@@ -860,7 +854,7 @@ RedAcesUI.calcDummyEnemyStat = function (type, stat) {
 };
 
 /** Returns the min attack of your trimps */
-RedAcesUI.getTrimpsMinAttack = function() {
+RedAcesUI.getTrimpsMinAttack = function(changeFormationTo) {
     var attack = 1 * calculateDamage(game.global.soldierCurrentAttack, true, true).split('-')[0];
 
     if (!game.global.mapsActive) {
@@ -871,11 +865,15 @@ RedAcesUI.getTrimpsMinAttack = function() {
         attack /= 2;
     }
 
+    attack = attack
+        / RedAcesUI.getFormationBonus(game.global.formation, 'attack')
+        * RedAcesUI.getFormationBonus(changeFormationTo, 'attack');
+
     return attack;
 };
 
 /** Returns the avg attack of your trimps (optionally with crits) */
-RedAcesUI.getTrimpsAvgAttack = function(crits) {
+RedAcesUI.getTrimpsAvgAttack = function(crits, changeFormationTo) {
     var parts  = calculateDamage(game.global.soldierCurrentAttack, true, true).split('-'),
         attack = (1 * parts[0] + 1 * parts[1]) / 2;
 
@@ -890,6 +888,10 @@ RedAcesUI.getTrimpsAvgAttack = function(crits) {
     if (game.global.titimpLeft > 0) {
         attack /= 2;
     }
+
+    attack = attack
+        / RedAcesUI.getFormationBonus(game.global.formation, 'attack')
+        * RedAcesUI.getFormationBonus(changeFormationTo, 'attack');
 
     return attack;
 };
@@ -1006,9 +1008,7 @@ RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
 
         if (changeAccordingToNeeds) {
             // No Void Map!
-            var attack = RedAcesUI.getTrimpsAvgAttack(true)
-                / RedAcesUI.getFormationBonus(game.global.formation, 'attack')
-                * RedAcesUI.getFormationBonus(4, 'attack'); // Scryer
+            var attack = RedAcesUI.getTrimpsAvgAttack(true, 4); // Scryer
 
             if (RedAcesUI.calcDummyEnemyStat('Map', 'health') / attack <= 2) {
                 // Use scryer if it would twohit the enemies
@@ -1091,7 +1091,7 @@ RedAcesUI.autoPlay = function() {
 
     RedAcesUI.setGeneticistAssist(opt.geneticistAssist, 'RA:autoPlay():');
 
-    if (game.global.world == (opt.voidMapZone - 2)) {
+    if ((game.global.world >= (opt.voidMapZone - 5)) && (game.global.world <= opt.voidMapZone)) {
         // Set generator to "Gain Magmite" because we dont need the fuel any more!
         changeGeneratorState(0);
     }
@@ -1099,16 +1099,24 @@ RedAcesUI.autoPlay = function() {
     // Auto run Maps
 
     var enemyText,
-        currentAttack      = RedAcesUI.getTrimpsAvgAttack(true),
+        currentAttack = RedAcesUI.getTrimpsAvgAttack(true, targetFormationBase),
+        currentHealth = game.global.soldierHealthMax
+            / RedAcesUI.getFormationBonus(game.global.formation, 'health')
+            * RedAcesUI.getFormationBonus(targetFormationBase, 'health'),
+        healthBuffer  = opt.healthBuffer,
         targetAttack,
-        currentHealth      = game.global.soldierHealthMax,
         enemyAttack,
+        enemyPiercePercent = 0;
+
+    if (game.global.world >= 60) {
         enemyPiercePercent = getPierceAmt();
+    }
 
     if (game.global.spireActive) {
         targetAttack = RedAcesUI.calcDummyEnemyStat('Spire', 'health') / opt.targetSpireNumHits;
         enemyText    = opt.targetSpireNumHits + '-Hit c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
         enemyAttack  = RedAcesUI.calcDummyEnemyStat('Spire', 'attack');
+        healthBuffer = 10; // reduced health buffer because of the intense scaling of each imp
 
         if (!game.global.useShriek) {
             // use magneto shriek!
@@ -1118,26 +1126,25 @@ RedAcesUI.autoPlay = function() {
         && (game.global.lastClearedCell >= opt.voidMapCell)
         && (game.global.totalVoidMaps > 0)
     ) {
-        targetAttack = RedAcesUI.calcDummyEnemyStat('Void', 'health') / opt.targetVoidMapNumHits;
-        enemyText    = opt.targetSpireNumHits + '-Hit c99 Void ' + opt.targetEnemy;
-
+        targetAttack       = RedAcesUI.calcDummyEnemyStat('Void', 'health') / opt.targetVoidMapNumHits;
+        enemyText          = opt.targetSpireNumHits + '-Hit c99 Void ' + opt.targetEnemy;
         enemyAttack        = RedAcesUI.calcDummyEnemyStat('Void', 'attack');
         enemyPiercePercent = 0;
 
         if (!game.global.mapsActive || getCurrentMapObject().location !== 'Void') {
-            // These masteries are already applied if we're in a VM
+            // Apply these masteries (They are already applied if we're in a VM)
             if (game.talents.voidPower.purchased) {
-                currentAttack /= 1.15; // 15 % attack
+                currentAttack *= 1.15; // 15 % attack
                 currentHealth *= 1.15; // 15 % health
             }
             if (game.talents.voidPower2.purchased) {
-                currentAttack /= 1.2; // 20 % attack
+                currentAttack *= 1.2; // 20 % attack
                 currentHealth *= 1.2; // 20 % health
             }
         }
     } else if (game.global.world < opt.overkillUntilZone) {
         targetAttack  = RedAcesUI.getNeededOverkillAttack('None');
-        currentAttack = RedAcesUI.getTrimpsMinAttack();
+        currentAttack = RedAcesUI.getTrimpsMinAttack(targetFormationBase);
         enemyText     = 'OK c99 ' + opt.targetEnemy + 's';
         enemyAttack   = RedAcesUI.calcDummyEnemyStat('None', 'attack');
     } else {
@@ -1150,24 +1157,23 @@ RedAcesUI.autoPlay = function() {
         enemyAttack  = RedAcesUI.calcDummyEnemyStat('World', 'attack');
     }
 
-    var damageAfterBlock = Math.max(0, enemyAttack - game.global.soldierCurrentBlock),
-        blockedDamage    = Math.min(enemyAttack, game.global.soldierCurrentBlock);
-
-    damageAfterBlock += blockedDamage * enemyPiercePercent;
-
-    var targetHealth = damageAfterBlock * opt.healthBuffer;
-
-    // Sometimes we're not using the formation we're supposed to!
-    currentAttack = currentAttack
-        / RedAcesUI.getFormationBonus(targetFormation, 'attack')
-        * RedAcesUI.getFormationBonus(targetFormationBase, 'attack');
-    currentHealth = currentHealth
-        / RedAcesUI.getFormationBonus(targetFormation, 'health')
-        * RedAcesUI.getFormationBonus(targetFormationBase, 'health');
+    var blockedDamage    = Math.min(enemyAttack, game.global.soldierCurrentBlock),
+        damageAfterBlock = Math.max(0, enemyAttack - game.global.soldierCurrentBlock) + blockedDamage * enemyPiercePercent,
+        targetHealth     = damageAfterBlock * healthBuffer;
 
     infoEnemySpan.innerHTML  = enemyText;
     infoAttackSpan.innerHTML = 'A: ' + prettify(currentAttack) + ' / ' + prettify(targetAttack);
     infoHealthSpan.innerHTML = 'H: ' + prettify(currentHealth) + ' / ' + prettify(targetHealth);
+    if (currentAttack >= targetAttack) {
+        infoAttackSpan.style.color = 'lightgreen';
+    } else {
+        infoAttackSpan.style.color = 'yellow';
+    }
+    if (currentHealth >= targetHealth) {
+        infoHealthSpan.style.color = 'lightgreen';
+    } else {
+        infoHealthSpan.style.color = 'yellow';
+    }
 
     if ((targetAttack > currentAttack) || (targetHealth > currentHealth)) {
         // Farm it!
@@ -1195,15 +1201,15 @@ RedAcesUI.autoPlay = function() {
         if (!game.global.mapsActive) {
             // TODO Toggle "Finish all Voids"
 
-            // Build all available nurseries
-            RedAcesUI.build('Nursery', 'Max');
-
-            // Set generator to "Gain Magmite" because we dont need the fuel any more!
-            changeGeneratorState(0);
-
             message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
             RedAcesUI.runVoidMaps();
         }
+        return;
+    }
+
+    if (!game.global.mapsActive && game.global.preMapsActive) {
+        // In pre-Maps screen, waiting for ... something?
+        mapsClicked();
         return;
     }
 
@@ -1214,12 +1220,6 @@ RedAcesUI.autoPlay = function() {
             'Notices'
         );
         repeatClicked();
-        return;
-    }
-
-    if (!game.global.mapsActive && game.global.preMapsActive) {
-        // In pre-Maps screen, waiting for ... something?
-        mapsClicked();
         return;
     }
 };
@@ -1441,13 +1441,13 @@ RedAcesUI.displayOptions = function() {
 
     var buildingsTitleDiv = document.getElementById('buildingsTitleDiv');
     if (buildingsTitleDiv) {
-        displayButton('autoBuild', 'AutoBuild', buildingsTitleDiv.childNodes[1].childNodes[3], false);
+        displayButton('autoBuild', 'AutoBuild', buildingsTitleDiv.childNodes[1].childNodes[3], true);
 
         displayButton(
             'calcWSStrat',
-            'Warpstation Strat',
-            buildingsTitleDiv.childNodes[1].childNodes[3],
-            false,
+            'WarpstationStrat',
+            buildingsTitleDiv.childNodes[1].childNodes[5],
+            true,
             RedAcesUI.calcWarpstationStrategyCurrent
         );
     }
