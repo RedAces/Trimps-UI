@@ -64,29 +64,30 @@ RedAcesUI.options = {
         "worldLevel":   179
     },
     "autoPlay": {
-        "enabled":                    true,
-        "geneticistAssist":             30,
-        "buyGoldenVoidUntil":          230,
-        "targetEnemy":          'Turtlimp',
+        "enabled":                         true,
+        "geneticistAssist":                  30,
+        "buyGoldenVoidUntil":               230,
+        "targetEnemy":               'Turtlimp',
+        "recycleHeirloomsWorseThan":          7,
 
         // Farming settings
-        "overkillUntilZone":           275,
-        "oneshotUntilZone":            285,
-        "healthBuffer":                 35, // Farm enough to withstand x blows / pierces
+        "overkillUntilZone":                275,
+        "oneshotUntilZone":                 285,
+        "healthBuffer":                      35, // Farm enough to withstand x blows / pierces
 
         // Formation settings
-        "scryerUntilZone":             280, // In Scryer
-        "dominanceUntilZone":          285, // In Dominance
+        "scryerUntilZone":                  280, // In Scryer
+        "dominanceUntilZone":               285, // In Dominance
 
         // Void Maps
-        "voidMapZone":                 285,
-        "voidMapCell":                  90,
-        "targetVoidMapNumHits":          2,
-        "voidMapFormation":              2, // Dominance
+        "voidMapZone":                      285,
+        "voidMapCell":                       90,
+        "targetVoidMapNumHits":               2,
+        "voidMapFormation":                   2, // Dominance
 
         // Spire
-        "targetSpireCell":              99,
-        "targetSpireNumHits":            1
+        "targetSpireCell":                   99,
+        "targetSpireNumHits":                 1
     }
 };
 
@@ -1045,6 +1046,24 @@ RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
     return 4; // Scryer
 };
 
+/** Recycles (at most 1) heirloom whose rarity is bad */
+RedAcesUI.autoRecycleHeirloom = function() {
+    for (var i in game.global.heirloomsExtra) {
+        if (!game.global.heirloomsExtra.hasOwnProperty(i)) {
+            continue;
+        }
+        var heirloom = game.global.heirloomsExtra[i];
+        if (heirloom.rarity < RedAcesUI.options.autoPlay.recycleHeirloomsWorseThan) {
+            message('RA:autoPlay(): recycling ' + heirloom.name, 'Notices');
+            game.global.selectedHeirloom = [i, 'heirloomsExtra'];
+            recycleHeirloom(true);
+
+            // Only recycle one heirloom at a time because the indexes will change because of it!
+            return;
+        }
+    }
+};
+
 /** Plays the game for you */
 RedAcesUI.autoPlay = function() {
     var opt = RedAcesUI.options.autoPlay;
@@ -1095,6 +1114,8 @@ RedAcesUI.autoPlay = function() {
         // Set generator to "Gain Magmite" because we dont need the fuel any more!
         changeGeneratorState(0);
     }
+
+    RedAcesUI.autoRecycleHeirloom();
 
     // Auto run Maps
 
