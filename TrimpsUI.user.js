@@ -80,7 +80,7 @@ RedAcesUI.options = {
         "dominanceUntilZone":               285, // In Dominance
 
         // Void Maps
-        "voidMapZone":                      285,
+        "voidMapZone":                      290,
         "voidMapCell":                       90,
         "targetVoidMapNumHits":               2,
         "voidMapFormation":                   2, // Dominance
@@ -676,8 +676,7 @@ RedAcesUI.farmMap = function(repeatUntil) {
         toggleSetting('repeatUntil')
     }
 
-    while (game.options.menu.exitTo.enabled != 1) {
-        // 1 ... "Exit to World"
+    while (game.options.menu.exitTo.enabled != 1) { // 1 ... "Exit to World"
         toggleSetting('exitTo')
     }
 
@@ -689,11 +688,16 @@ RedAcesUI.farmMap = function(repeatUntil) {
 
 /** Selects a map of the requested level. Will use an existing one or buy a new one */
 RedAcesUI.selectMap = function (level) {
+    var mapObj = getCurrentMapObject();
+    if (typeof mapObj !== 'undefined') {
+        return mapObj;
+    }
+
     for (var i in game.global.mapsOwnedArray) {
         if (!game.global.mapsOwnedArray.hasOwnProperty(i)) {
             continue;
         }
-        var mapObj = game.global.mapsOwnedArray[i];
+        mapObj = game.global.mapsOwnedArray[i];
         if ((mapObj.level === level) && !mapObj.noRecycle) {
             // only use maps of the requested level that are recyclable (no unique maps!)
             selectMap(mapObj.id);
@@ -766,8 +770,7 @@ RedAcesUI.runVoidMaps = function() {
         toggleSetting('repeatVoids');
     }
 
-    while (game.options.menu.exitTo.enabled != 1) {
-        // 1 ... "Exit to World"
+    while (game.options.menu.exitTo.enabled != 1) { // 1 ... "Exit to World"
         toggleSetting('exitTo')
     }
 
@@ -1137,7 +1140,7 @@ RedAcesUI.autoPlay = function() {
         targetAttack = RedAcesUI.calcDummyEnemyStat('Spire', 'health') / opt.targetSpireNumHits;
         enemyText    = opt.targetSpireNumHits + '-Hit c' + opt.targetSpireCell + ' Spire ' + opt.targetEnemy;
         enemyAttack  = RedAcesUI.calcDummyEnemyStat('Spire', 'attack');
-        healthBuffer = 10; // reduced health buffer because of the intense scaling of each imp
+        healthBuffer = 1; // reduced health buffer because of the intense scaling of each imp
 
         if (!game.global.useShriek) {
             // use magneto shriek!
@@ -1200,14 +1203,41 @@ RedAcesUI.autoPlay = function() {
         // Farm it!
 
         if (!game.global.mapsActive) {
-            // Not farming yet!
+            // Not in a map
             if (!game.global.switchToMaps) {
+                // Not "waiting for trimps to die" yet
                 message(
                     'RA:autoPlay(): run z' + game.global.world + ' maps',
                     'Notices'
                 );
             }
             RedAcesUI.farmMap(0); // Repeat forever
+        } else if ((targetHealth > currentHealth)
+            && (game.resources.trimps.owned == game.resources.trimps.realMax())
+            && game.global.repeatMap
+            && !game.global.preMapsActive
+        ) {
+            // We're in a map, we need more health and our trimps are full
+            // Kill them so that the values for HP and Block can be refreshed!
+            // Nurseries, Trainers and Gyms dont count to the already fighting group of trimps
+            message(
+                'RA:autoPlay(): killing the Trimps to get the new HP / Block values',
+                'Notices'
+            );
+
+            // Go to maps
+            while (game.options.menu.exitTo.enabled != 0) { // 0 ... "Exit to Maps"
+                toggleSetting('exitTo')
+            }
+
+            // Click it twice to really go to the pre-maps-screen
+            mapsClicked(true);
+            mapsClicked(true);
+            runMap();
+
+            while (game.options.menu.exitTo.enabled != 1) { // 1 ... "Exit to World"
+                toggleSetting('exitTo')
+            }
         }
         return;
     }
@@ -1217,14 +1247,12 @@ RedAcesUI.autoPlay = function() {
     if ((game.global.totalVoidMaps > 0)
         && (game.global.world == opt.voidMapZone)
         && (game.global.lastClearedCell >= opt.voidMapCell)
+        && !game.global.mapsActive
     ) {
         // We're ready for the voids!
-        if (!game.global.mapsActive) {
-            // TODO Toggle "Finish all Voids"
 
-            message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
-            RedAcesUI.runVoidMaps();
-        }
+        message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
+        RedAcesUI.runVoidMaps();
         return;
     }
 
