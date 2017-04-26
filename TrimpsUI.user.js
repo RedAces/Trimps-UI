@@ -65,7 +65,7 @@ RedAcesUI.options = {
     },
     "autoPlay": {
         "enabled":                         true,
-        "geneticistAssist":                  30,
+        "geneticistAssist":                  30, // TODO automatisch berechnen? Logik?
         "buyGoldenVoidUntil":               230,
         "targetEnemy":               'Turtlimp',
         "recycleHeirloomsWorseThan":          7,
@@ -80,7 +80,7 @@ RedAcesUI.options = {
         "dominanceUntilZone":               285, // In Dominance
 
         // Void Maps
-        "voidMapZone":                      290,
+        "voidMapZone":                      298,
         "voidMapCell":                       90,
         "targetVoidMapNumHits":               2,
         "voidMapFormation":                   2, // Dominance
