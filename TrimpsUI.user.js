@@ -66,21 +66,19 @@ RedAcesUI.options = {
     "autoPlay": {
         "enabled":                         true,
         "geneticistAssist":                  30, // TODO automatisch berechnen? Logik?
-        "buyGoldenVoidUntil":               230,
+        "buyGoldenVoidUntil":               290,
+        "recycleHeirloomsWorseThan":          7, // 7 .. "Magmatic"
         "targetEnemy":               'Turtlimp',
-        "recycleHeirloomsWorseThan":          7,
-
-        // Farming settings
-        "overkillUntilZone":                275,
-        "oneshotUntilZone":                 285,
         "healthBuffer":                      35, // Farm enough to withstand x blows / pierces
 
-        // Formation settings
-        "scryerUntilZone":                  280, // In Scryer
-        "dominanceUntilZone":               285, // In Dominance
-
-        // Void Maps
-        "voidMapZone":                      298,
+        // Void Maps Zone (VMZ) Configuration
+        // Before VMZ - 10: OK in Scryer
+        // Until  VMZ - 5 : 1 - Hit in Scryer
+        // Until  VMZ     : 1 - Hit in Dominance
+        // VMs in VMZ     : 2 - Hit in Dominance (see "targetVoidMapNumHits" and "voidMapFormation")
+        // Until  VMZ + 5 : 1 - Hit in Dominance
+        // After  VMZ + 5 : 2 - Hit in Dominance
+        "voidMapZone":                      305,
         "voidMapCell":                       90,
         "targetVoidMapNumHits":               2,
         "voidMapFormation":                   2, // Dominance
@@ -1027,9 +1025,12 @@ RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
         return 2; // Dominance
     }
 
+    if (game.global.world < (RedAcesUI.options.autoPlay.voidMapZone - 5)) {
+        return 4; // Scryer
+    }
+
     if (changeAccordingToNeeds
         && !game.global.mapsActive
-        && (game.global.world >= RedAcesUI.options.autoPlay.scryerUntilZone)
         && game.global.gridArray.hasOwnProperty(game.global.lastClearedCell + 1)
     ) {
         var thisEnemy = game.global.gridArray[game.global.lastClearedCell + 1];
@@ -1038,15 +1039,7 @@ RedAcesUI.getDesiredFormation = function (changeAccordingToNeeds) {
         }
     }
 
-    if (game.global.world >= RedAcesUI.options.autoPlay.dominanceUntilZone) {
-        return 0; // X
-    }
-
-    if (game.global.world >= RedAcesUI.options.autoPlay.scryerUntilZone) {
-        return 2; // Dominance
-    }
-
-    return 4; // Scryer
+    return 2; // Dominance
 };
 
 /** Recycles (at most 1) heirloom whose rarity is bad */
@@ -1113,7 +1106,7 @@ RedAcesUI.autoPlay = function() {
 
     RedAcesUI.setGeneticistAssist(opt.geneticistAssist, 'RA:autoPlay():');
 
-    if ((game.global.world >= (opt.voidMapZone - 5)) && (game.global.world <= opt.voidMapZone)) {
+    if ((game.global.world >= (opt.voidMapZone - 2)) && (game.global.world <= opt.voidMapZone)) {
         // Set generator to "Gain Magmite" because we dont need the fuel any more!
         changeGeneratorState(0);
     }
@@ -1166,14 +1159,14 @@ RedAcesUI.autoPlay = function() {
                 currentHealth *= 1.2; // 20 % health
             }
         }
-    } else if (game.global.world < opt.overkillUntilZone) {
+    } else if (game.global.world < opt.voidMapZone - 10) {
         targetAttack  = RedAcesUI.getNeededOverkillAttack('None');
         currentAttack = RedAcesUI.getTrimpsMinAttack(targetFormationBase);
         enemyText     = 'OK c99 ' + opt.targetEnemy + 's';
         enemyAttack   = RedAcesUI.calcDummyEnemyStat('None', 'attack');
     } else {
         var targetNumHits = 1;
-        if (game.global.world >= opt.oneshotUntilZone) {
+        if (game.global.world >= opt.voidMapZone + 5) {
             targetNumHits = 2;
         }
         targetAttack = RedAcesUI.calcDummyEnemyStat('World', 'health') / targetNumHits;
@@ -1247,12 +1240,21 @@ RedAcesUI.autoPlay = function() {
     if ((game.global.totalVoidMaps > 0)
         && (game.global.world == opt.voidMapZone)
         && (game.global.lastClearedCell >= opt.voidMapCell)
-        && !game.global.mapsActive
     ) {
         // We're ready for the voids!
 
-        message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
-        RedAcesUI.runVoidMaps();
+        if (game.global.mapsActive) {
+            var mapObj = getCurrentMapObject();
+            if (mapObj.location !== 'Void') {
+                // normal map is active
+                message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
+                RedAcesUI.runVoidMaps();
+            }
+        } else {
+            // no map is active
+            message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
+            RedAcesUI.runVoidMaps();
+        }
         return;
     }
 
