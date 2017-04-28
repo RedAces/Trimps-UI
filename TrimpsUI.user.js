@@ -39,7 +39,7 @@ RedAcesUI.options = {
             "Nursery": {
                 "buildPerZone":     50,
                 "startAmount":     500,
-                "maxAmount":      2600
+                "maxAmount":      2800
             }
         }
     },
@@ -1088,9 +1088,13 @@ RedAcesUI.autoPlay = function() {
         var what;
         if (game.global.world <= opt.buyGoldenVoidUntil) {
             what = 'Void';
+            if (parseFloat((game.goldenUpgrades.Void.currentBonus + game.goldenUpgrades.Void.nextAmt()).toFixed(2)) > 0.60) {
+                what = 'Helium';
+            }
         } else {
             what = 'Helium';
         }
+
         message('RA:autoPlay(): buying Golden ' + what, 'Notices');
         buyGoldenUpgrade(what);
     }
