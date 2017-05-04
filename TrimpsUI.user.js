@@ -39,7 +39,7 @@ RedAcesUI.options = {
             "Nursery": {
                 "buildPerZone":     50,
                 "startAmount":     500,
-                "maxAmount":      2800
+                "maxAmount":      2900
             }
         }
     },
@@ -70,6 +70,7 @@ RedAcesUI.options = {
         "recycleHeirloomsWorseThan":          7, // 7 .. "Magmatic"
         "targetEnemy":               'Turtlimp',
         "healthBuffer":                      35, // Farm enough to withstand x blows / pierces
+        "gainMagmiteZoneOffset":              2, // How many zones before voidMapZone should we set the generator to "Gain Mi"?
 
         // Void Maps Zone (VMZ) Configuration
         // Before VMZ - 10: OK in Scryer
@@ -78,9 +79,9 @@ RedAcesUI.options = {
         // VMs in VMZ     : 2 - Hit in Dominance (see "targetVoidMapNumHits" and "voidMapFormation")
         // Until  VMZ + 5 : 1 - Hit in Dominance
         // After  VMZ + 5 : 2 - Hit in Dominance
-        "voidMapZone":                      305,
+        "voidMapZone":                      316,
         "voidMapCell":                       90,
-        "targetVoidMapNumHits":               2,
+        "targetVoidMapNumHits":               1,
         "voidMapFormation":                   2, // Dominance
 
         // Spire
@@ -1110,8 +1111,11 @@ RedAcesUI.autoPlay = function() {
 
     RedAcesUI.setGeneticistAssist(opt.geneticistAssist, 'RA:autoPlay():');
 
-    if ((game.global.world >= (opt.voidMapZone - 2)) && (game.global.world <= opt.voidMapZone)) {
-        // Set generator to "Gain Magmite" because we dont need the fuel any more!
+    if ((game.global.world >= (opt.voidMapZone - opt.gainMagmiteZoneOffset))
+        && (game.global.world <= opt.voidMapZone)
+        && (game.global.generatorMode != 0)
+    ) {
+        message('RA:autoPlay(): setting Dimensional Generator to "Gain Magmite".', 'Notices');
         changeGeneratorState(0);
     }
 
@@ -1249,10 +1253,10 @@ RedAcesUI.autoPlay = function() {
 
         if (game.global.mapsActive) {
             var mapObj = getCurrentMapObject();
-            if (mapObj.location !== 'Void') {
-                // normal map is active
-                message('RA:autoPlay(): running z' + game.global.world + ' void maps', 'Notices');
-                RedAcesUI.runVoidMaps();
+            if (mapObj.location !== 'Void' && game.global.repeatMap) {
+                // normal map is active, stop repeating
+                repeatClicked();
+                return;
             }
         } else {
             // no map is active
@@ -1390,21 +1394,34 @@ RedAcesUI.calcWarpstationStrategyCurrent = function() {
     return warpstationZero + '+' + warpstationDelta;
 };
 
-/** init main loop */
-
-RedAcesUI.inProcess = false;
-
-RedAcesUI.mainLoop = function() {
-    if (RedAcesUI.inProcess) {
-        return;
-    }
-    RedAcesUI.inProcess = true;
-
+/** Sets the document title */
+RedAcesUI.autoTitle = function() {
     document.title = 'Trimps z' + game.global.world + '-' + (game.global.lastClearedCell + 2);
     if (getAvailableGoldenUpgrades() > 0) {
         document.title = 'GOLDEN ' + document.title;
     }
 
+    if (game.global.mapsActive) {
+        var mapObj = getCurrentMapObject();
+        if (mapObj.location === 'Void') {
+            document.title += ' (' + game.global.totalVoidMaps + ' VM)';
+        } else {
+            document.title += ' (M)';
+        }
+    }
+};
+
+/** init main loop */
+
+RedAcesUI.inProgress = false;
+
+RedAcesUI.mainLoop = function() {
+    if (RedAcesUI.inProgress) {
+        return;
+    }
+    RedAcesUI.inProgress = true;
+
+    RedAcesUI.autoTitle();
     RedAcesUI.autoHireTrimps();
     RedAcesUI.autoBuild();
     RedAcesUI.autoGather();
@@ -1412,7 +1429,7 @@ RedAcesUI.mainLoop = function() {
     RedAcesUI.autoPause();
     RedAcesUI.autoPlay();
 
-    RedAcesUI.inProcess = false;
+    RedAcesUI.inProgress = false;
 };
 
 RedAcesUI.mainTimer = setInterval(
