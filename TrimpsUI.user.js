@@ -79,7 +79,7 @@ RedAcesUI.options = {
         // VMs in VMZ     : 2 - Hit in Dominance (see "targetVoidMapNumHits" and "voidMapFormation")
         // Until  VMZ + 5 : 1 - Hit in Dominance
         // After  VMZ + 5 : 2 - Hit in Dominance
-        "voidMapZone":                      316,
+        "voidMapZone":                      318,
         "voidMapCell":                       90,
         "targetVoidMapNumHits":               1,
         "voidMapFormation":                   2, // Dominance
@@ -416,9 +416,9 @@ RedAcesUI.autoHireTrimps = function() {
         maxWorkerTrimps -= game.jobs.Magmamancer.owned;
     }
 
-    RedAcesUI.hire('Trainer', 'Max');
+    RedAcesUI.hire('Trainer',     'Max');
     RedAcesUI.hire('Magmamancer', 'Max');
-    RedAcesUI.hire('Explorer', 'Max');
+    RedAcesUI.hire('Explorer',    1500 - game.jobs.Explorer.owned); // Max 1500
 
     for (var jobName in jobRatios) {
         if (!jobRatios.hasOwnProperty(jobName) || !game.jobs.hasOwnProperty(jobName)) {
