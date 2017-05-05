@@ -79,7 +79,7 @@ RedAcesUI.options = {
         // VMs in VMZ     : 2 - Hit in Dominance (see "targetVoidMapNumHits" and "voidMapFormation")
         // Until  VMZ + 5 : 1 - Hit in Dominance
         // After  VMZ + 5 : 2 - Hit in Dominance
-        "voidMapZone":                      318,
+        "voidMapZone":                      320,
         "voidMapCell":                       90,
         "targetVoidMapNumHits":               1,
         "voidMapFormation":                   2, // Dominance
